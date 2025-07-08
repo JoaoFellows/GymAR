@@ -11,6 +11,9 @@ export default function Home() {
   useEffect(() => {
     let renderer: THREE.WebGLRenderer;
     let mixer: THREE.AnimationMixer;
+    let model: THREE.Group | null = null;
+    let isDragging = false;
+    let previousX = 0;
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
@@ -35,7 +38,7 @@ export default function Home() {
 
     const loader = new GLTFLoader();
     loader.load("/models/Sumo_high_pull.glb", (gltf) => {
-      const model = gltf.scene;
+      model = gltf.scene;
       model.scale.set(0.2, 0.2, 0.2);
       model.position.set(0, 0, -0.5);
       scene.add(model);
@@ -44,6 +47,36 @@ export default function Home() {
       gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
     });
 
+    // Mouse event handlers
+    const onMouseDown = (event: MouseEvent) => {
+      if (event.button === 0) { 
+        isDragging = true;
+        previousX = event.clientX;
+      }
+
+      else isDragging = false;
+    };
+
+    const onMouseMove = (event: MouseEvent) => {
+      if (isDragging && model) {
+        const deltaX = event.clientX - previousX;
+        model.rotation.y += deltaX * 0.01;
+        previousX = event.clientX;
+      }
+    };
+
+    const onMouseUp = (event: MouseEvent) => {
+      isDragging = false;
+    };
+
+    // Attach listeners after domElement is in the DOM
+    const domElement = renderer.domElement;
+    domElement.addEventListener("mousedown", onMouseDown);
+    domElement.addEventListener("mousemove", onMouseMove);
+    domElement.addEventListener("mouseup", onMouseUp);
+    domElement.addEventListener("mouseleave", onMouseUp);
+    domElement.addEventListener("contextmenu", (e) => e.preventDefault());
+
     renderer.setAnimationLoop(() => {
       if (mixer) mixer.update(0.01);
       renderer.render(scene, camera);
@@ -51,6 +84,11 @@ export default function Home() {
 
     return () => {
       renderer.dispose();
+      domElement.removeEventListener("mousedown", onMouseDown);
+      domElement.removeEventListener("mousemove", onMouseMove);
+      domElement.removeEventListener("mouseup", onMouseUp);
+      domElement.removeEventListener("mouseleave", onMouseUp);
+      domElement.removeEventListener("contextmenu", (e) => e.preventDefault());
     };
   }, []);
 
