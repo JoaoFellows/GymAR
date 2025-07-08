@@ -8,6 +8,7 @@ interface CreateExerciseData {
   name: string;
   slug: string;
   description?: string;
+  categoria?: string;
   modelo3D?: string;
   videoAR?: string;
 }
@@ -16,12 +17,13 @@ interface UpdateExerciseData {
   name?: string;
   slug?: string;
   description?: string;
+  categoria?: string;
   modelo3D?: string;
   videoAR?: string;
 }
 
 // Função para gerar QR code para um exercício
-async function generateQRCodeForExercise(slug: string, exerciseName: string) {
+async function generateQRCodeForExercise(slug: string, exerciseName: string, categoria: string) {
   try {
     const qrCodeDir = path.join(process.cwd(), 'public', 'qrcodes');
     
@@ -30,7 +32,7 @@ async function generateQRCodeForExercise(slug: string, exerciseName: string) {
       fs.mkdirSync(qrCodeDir, { recursive: true });
     }
     
-    const url = `https://gymar.app/ar/${slug}`;
+    const url = `http://localhost:3000/exercise/${categoria}/${slug}`;
     const fileName = `${slug}.png`;
     const filePath = path.join(qrCodeDir, fileName);
     
@@ -63,13 +65,16 @@ export async function createExercise(data: CreateExerciseData) {
         name: data.name,
         slug: data.slug,
         description: data.description,
+        categoria: data.categoria || 'Geral',
         modelo3D: data.modelo3D,
         videoAR: data.videoAR,
       },
     });
     
+    const categoria = exercise.categoria || 'Geral';
+
     // Gerar QR code automaticamente
-    await generateQRCodeForExercise(exercise.slug, exercise.name);
+    await generateQRCodeForExercise(exercise.slug, exercise.name, categoria);
     
     return exercise;
   } catch (error) {
@@ -154,11 +159,11 @@ export async function updateExercise(id: number, data: UpdateExerciseData) {
     // Se o slug mudou, deletar o QR code antigo e gerar um novo
     if (data.slug && data.slug !== currentExercise.slug) {
       await deleteQRCodeForExercise(currentExercise.slug, currentExercise.name);
-      await generateQRCodeForExercise(exercise.slug, exercise.name);
+      await generateQRCodeForExercise(exercise.slug, exercise.name, (exercise.categoria || 'Geral'));
     }
     // Se apenas o nome mudou, regenerar o QR code com o novo nome
     else if (data.name && data.name !== currentExercise.name) {
-      await generateQRCodeForExercise(exercise.slug, exercise.name);
+      await generateQRCodeForExercise(exercise.slug, exercise.name, (exercise.categoria || 'Geral'));
     }
     
     return exercise;

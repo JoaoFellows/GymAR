@@ -70,7 +70,7 @@ export async function getExerciseBySlugController(request: NextRequest, { params
 export async function createExerciseController(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, slug, description, modelo3D, videoAR } = body;
+    const { name, slug, description, categoria, modelo3D, videoAR } = body;
 
     if (!name || !slug) {
       return NextResponse.json(
@@ -83,6 +83,7 @@ export async function createExerciseController(request: NextRequest) {
       name,
       slug,
       description,
+      categoria,
       modelo3D,
       videoAR,
     });
@@ -109,12 +110,13 @@ export async function updateExerciseController(request: NextRequest, { params }:
     }
 
     const body = await request.json();
-    const { name, slug, description, modelo3D, videoAR } = body;
+    const { name, slug, description, categoria, modelo3D, videoAR } = body;
 
     const exercise = await updateExercise(id, {
       name,
       slug,
       description,
+      categoria,
       modelo3D,
       videoAR,
     });
