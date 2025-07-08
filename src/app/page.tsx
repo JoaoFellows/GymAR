@@ -19,7 +19,7 @@ export default function HomePage() {
           </Link>
           <Link
             className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 text-white hover:bg-white/20"
-            href="/free-exercises"
+            href="/exercise"
           >
             <div className="text-lg items-center justify-center flex flex-col gap-2 text-center">
               <Dumbbell className="h-40 w-30 text-white" />
