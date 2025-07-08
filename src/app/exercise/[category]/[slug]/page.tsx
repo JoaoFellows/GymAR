@@ -40,7 +40,7 @@ export default function Home() {
     loader.load("/models/Sumo_high_pull.glb", (gltf) => {
       model = gltf.scene;
       model.scale.set(0.2, 0.2, 0.2);
-      model.position.set(0, 0, -0.5);
+      model.position.set(0, -0.2, -0.5); // Move o modelo mais para baixo no eixo Y
       scene.add(model);
 
       mixer = new THREE.AnimationMixer(model);
@@ -92,5 +92,16 @@ export default function Home() {
     };
   }, []);
 
-  return <div ref={containerRef} style={{ width: "100vw", height: "100vh" }} />;
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        width: "100vw",
+        height: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    />
+  );
 }

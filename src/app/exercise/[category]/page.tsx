@@ -82,7 +82,7 @@ export default function CategoryPage({ params }: Props) {
     }
 
     return (
-        <div className="bg-gradient-to-b from-[#121111] to-[#020217] min-h-screen flex flex-col items-center justify-center text-center text-white">
+        <div className="bg-gradient-to-b from-[#121111] to-[#020217] min-h-screen text-white text-center">
             <Header />
             <button
                 onClick={() => router.back()}
@@ -96,10 +96,14 @@ export default function CategoryPage({ params }: Props) {
                 <h1>Exercícios de {category}</h1>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                     {exercises.filter(ex => ex.category === category).map(exercise => (
-                        <div key={exercise.id} className="bg-[#1e1e2f] p-4 rounded-lg">
+                        <Link
+                            key={exercise.id}
+                            href={`/exercise/${category}/${exercise.id}`}
+                            className="bg-[#1e1e2f] p-4 rounded-lg block hover:bg-[#292945] transition"
+                        >
                             <h2 className="text-lg font-bold">{exercise.title}</h2>
                             <p>{exercise.description}</p>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             </main>
