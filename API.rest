@@ -53,11 +53,12 @@ GET {{baseUrl}}?search=Aga
 ###
 
 ### 7. ✏️ Atualizar exercício (substitua {id} pelo ID real)
-PUT {{baseUrl}}/1
+PUT {{baseUrl}}/4
 Content-Type: application/json
 
 {
-  "name": "Flexão de Braço - Nível Avançado",
+  "name": "Flexão de Braço - Nível Avançado 2",
+  "slug": "flexao-braco-avancado",
   "description": "Exercício avançado para fortalecer peitorais, tríceps e deltoides com maior intensidade",
   "modelo3D": "https://example.com/modelo3d/flexao-avancado.obj"
 }
@@ -75,7 +76,7 @@ Content-Type: application/json
 ###
 
 ### 9. 🗑️ Deletar exercício (substitua {id} pelo ID real)
-DELETE {{baseUrl}}/2
+DELETE {{baseUrl}}/7
 
 ###
 
@@ -165,5 +166,28 @@ Content-Type: application/json
   "description": "Exercício para desenvolvimento dos músculos bíceps",
   "modelo3D": "https://example.com/modelo3d/rosca.obj"
 }
+
+###
+
+### 🧹 GERENCIAMENTO DE QR CODES
+
+### 🗑️ Limpar QR codes órfãos (sem exercício correspondente)
+DELETE {{baseUrl}}/qrcodes/cleanup
+
+###
+
+### 🔍 Verificar se QR code foi gerado (substitua {slug} pelo slug real)
+### Abra no navegador: http://localhost:3000/qrcodes/flexao-braco.png
+
+###
+
+### 📝 TESTE COMPLETO DE QR CODES:
+### 1. Crie um exercício (POST)
+### 2. Verifique se o QR code foi gerado em public/qrcodes/
+### 3. Atualize o slug do exercício (PUT)
+### 4. Verifique se o QR code antigo foi deletado e o novo criado
+### 5. Delete o exercício (DELETE)
+### 6. Verifique se o QR code foi removido
+### 7. Execute cleanup para remover órfãos
 
 ###
