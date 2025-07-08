@@ -24,6 +24,7 @@ model Exercise {
     name        String
     slug        String   @unique
     description String?
+    categoria   String?
     modelo3D    String?
     videoAR     String?
     createdAt   DateTime @default(now())

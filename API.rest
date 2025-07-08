@@ -17,6 +17,7 @@ Content-Type: application/json
   "name": "Flexão de Braço",
   "slug": "flexao-braco", 
   "description": "Exercício para fortalecer peitorais, tríceps e deltoides",
+  "categoria": "upper-body",
   "modelo3D": "https://example.com/modelo3d/flexao.obj",
   "videoAR": "https://example.com/ar/flexao.mp4"
 }
@@ -76,7 +77,7 @@ Content-Type: application/json
 ###
 
 ### 9. 🗑️ Deletar exercício (substitua {id} pelo ID real)
-DELETE {{baseUrl}}/7
+DELETE {{baseUrl}}/9
 
 ###
 
