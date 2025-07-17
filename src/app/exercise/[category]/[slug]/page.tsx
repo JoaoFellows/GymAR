@@ -9,6 +9,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 type ARjsSource = {
   ready: boolean;
   domElement: HTMLVideoElement;
+  init: (callback: () => void) => void; // Adicione isto
 };
 
 type GLTFResult = {
@@ -97,18 +98,14 @@ export default function Home() {
           // Fonte e contexto AR.js
           const arSource: ARjsSource = new ARjs.Source({ sourceType: "webcam" });
           //container.appendChild(arSource.domElement);
-          const appendARVideo = () => {
-          if (arSource.domElement instanceof Node) {
-            container.appendChild(arSource.domElement);
-            console.warn("arSource.domElement BOA:", arSource.domElement);
-          } else if (arVideoTries < arVideoMaxTries) {
-            arVideoTries++;
-            setTimeout(appendARVideo, 100);
-          } else {
-            console.error("❌ Falha ao obter acesso à câmera: arSource.domElement não foi criado após 10s.");
-          }
-        };
-        appendARVideo();
+          arSource.init(() => {
+              if (arSource.domElement instanceof Node) {
+                container.appendChild(arSource.domElement);
+                console.log("🎥 Câmera inicializada com sucesso.");
+              } else {
+                console.error("❌ arSource.domElement não criado.");
+              }
+          });
           const arContext: ARjsContext = new ARjs.Context({
             cameraParametersUrl: "/data/camera_para.dat",
             detectionMode: "mono",
