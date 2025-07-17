@@ -87,6 +87,10 @@ export default function Home() {
           const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
           renderer.setSize(window.innerWidth, window.innerHeight);
           renderer.setClearColor(0x000000, 0);
+           renderer.domElement.style.position = "absolute";
+          renderer.domElement.style.top = "0";
+          renderer.domElement.style.left = "0";
+          renderer.domElement.style.zIndex = "1";
           container.appendChild(renderer.domElement);
 
           const scene = new THREE.Scene();
@@ -95,14 +99,19 @@ export default function Home() {
 
           // Fonte e contexto AR.js
           const arSource: ARjsSource = new ARjs.Source({ sourceType: "webcam" });
-          //container.appendChild(arSource.domElement);
           arSource.init(() => {
-              if (arSource.domElement instanceof Node) {
-                container.appendChild(arSource.domElement);
-                console.log("🎥 Câmera inicializada com sucesso.");
-              } else {
-                console.error("❌ arSource.domElement não criado.");
-              }
+            const video = arSource.domElement;
+            if (video instanceof HTMLVideoElement) {
+              video.style.position = "absolute";
+              video.style.top = "0";
+              video.style.left = "0";
+              video.style.width = "100%";
+              video.style.height = "100%";
+              video.style.objectFit = "cover";
+              video.style.zIndex = "0";
+              container.appendChild(video);
+              console.log("🎥 Câmera ativada.");
+            }
           });
           const arContext: ARjsContext = new ARjs.Context({
             cameraParametersUrl: "/data/camera_para.dat",
