@@ -94,6 +94,7 @@ export default function Home() {
 
           // Fonte e contexto AR.js
           const arSource: ARjsSource = new ARjs.Source({ renderer, camera });
+          container.appendChild(arSource.domElement);
           const arContext: ARjsContext = new ARjs.Context({
             cameraParametersUrl: "/data/camera_para.dat",
             detectionMode: "mono",
