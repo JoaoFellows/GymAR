@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import type { Matrix4, Group } from "three"; // ✅ import de tipo
 
 type ARjsSource = {
   ready: boolean;
@@ -12,7 +10,7 @@ type ARjsSource = {
 type ARjsContext = {
   init: (callback: () => void) => void;
   update: (video: HTMLVideoElement) => void;
-  getProjectionMatrix: () => Matrix4; // ✅ uso do tipo correto
+  getProjectionMatrix: () => any; // Corrigido para any
 };
 
 type ARjs = {
@@ -23,7 +21,7 @@ type ARjs = {
 declare global {
   interface Window {
     ARjs: ARjs;
-    THREE: typeof import("three");
+    THREE: any;
   }
 }
 
@@ -34,81 +32,115 @@ export default function Home() {
     const container = containerRef.current;
     if (!container) return;
 
-    // Carrega THREE.js primeiro
+    // Carrega THREE.js
     const threeScript = document.createElement("script");
     threeScript.src = "https://cdn.jsdelivr.net/npm/three@0.110.0/build/three.min.js";
+
     threeScript.onload = () => {
-      // Depois carrega AR.js
+      window.THREE = window.THREE || (window as any).THREE;
+
+      // Carrega AR.js (Three.js + marker tracking)
       const arScript = document.createElement("script");
-      arScript.src = "https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/three.js/build/ar-threex.js";
+      arScript.src = "https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar.js";
+
       arScript.onload = () => {
-        const ARjs = window.ARjs;
-        const THREE = window.THREE;
+        // Carrega GLTFLoader
+        const gltfLoaderScript = document.createElement("script");
+        gltfLoaderScript.src = "https://cdn.jsdelivr.net/npm/three@0.110.0/examples/js/loaders/GLTFLoader.js";
 
-        if (!ARjs || !THREE) {
-          console.error("❌ ARjs ou THREE não carregados corretamente.");
-          return;
-        }
+        gltfLoaderScript.onload = () => {
+          const THREE = window.THREE;
+          // Testa diferentes nomes globais para AR.js
+          // @ts-ignore
+          const ARjs = window.ARjs || window['AR'] || window['ARJS'] || null;
 
-        console.log("✅ AR.js e THREE carregados.");
+          // @ts-ignore
+          console.log("🔧 Scripts carregados:", { THREE, ARjs, AR: window['AR'], ARJS: window['ARJS'] });
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(0x000000, 0);
-        container.appendChild(renderer.domElement);
-
-        const scene = new THREE.Scene();
-        const camera = new THREE.Camera();
-        scene.add(camera);
-
-        const arSource = new ARjs.Source({ renderer, camera });
-        const arContext = new ARjs.Context({
-          cameraParametersUrl: "/camera_para.dat", // coloque em /public
-          detectionMode: "mono",
-        });
-
-        arContext.init(() => {
-          camera.projectionMatrix.copy(arContext.getProjectionMatrix());
-        });
-
-        let model: Group | null = null;
-        const loader = new GLTFLoader();
-        loader.load("/models/Sumo_high_pull.glb",
-          (gltf) => {
-            model = gltf.scene;
-            model.scale.set(0.2, 0.2, 0.2);
-            scene.add(model);
-            console.log("✅ Modelo GLB carregado");
-          },
-          undefined,
-          (error) => {
-            console.error("Erro ao carregar modelo:", error);
+          if (!THREE) {
+            console.error("❌ THREE não carregado.");
+            return;
           }
-        );
-
-        const animate = () => {
-          requestAnimationFrame(animate);
-          if (arSource.ready) {
-            arContext.update(arSource.domElement);
+          if (!THREE.GLTFLoader) {
+            console.error("❌ GLTFLoader não carregado.");
+            return;
+          }
+          if (!ARjs) {
+            console.error("❌ ARjs não carregado. Teste window.AR e window.ARJS no console.");
+            return;
           }
 
-          if (model) {
-            model.position.set(0, 0, -1);
-            model.quaternion.copy(camera.quaternion);
-          }
+          // Setup básico da cena
+          const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          renderer.setClearColor(0x000000, 0);
+          container.appendChild(renderer.domElement);
 
-          renderer.render(scene, camera);
+          const scene = new THREE.Scene();
+          const camera = new THREE.Camera();
+          scene.add(camera);
+
+          // Fonte e contexto AR.js
+          const arSource = new ARjs.Source({ renderer, camera });
+          const arContext = new ARjs.Context({
+            cameraParametersUrl: "https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/three.js/data/camera_para.dat",
+            detectionMode: "mono",
+          });
+
+          arContext.init(() => {
+            camera.projectionMatrix.copy(arContext.getProjectionMatrix());
+          });
+
+          // Carrega modelo GLB usando o loader global
+          let model: any = null;
+          const loader = new THREE.GLTFLoader();
+          loader.load(
+            "/models/Sumo_high_pull.glb",
+            (gltf: any) => {
+              model = gltf.scene;
+              model.scale.set(0.2, 0.2, 0.2);
+              scene.add(model);
+              console.log("✅ Modelo carregado");
+            },
+            undefined,
+            (err: any) => console.error("❌ Erro ao carregar GLB:", err)
+          );
+
+          // Loop de renderização
+          const animate = () => {
+            requestAnimationFrame(animate);
+
+            if (arSource.ready) {
+              arContext.update(arSource.domElement);
+            }
+
+            if (model) {
+              model.position.set(0, 0, -1);
+              model.quaternion.copy(camera.quaternion);
+            }
+
+            renderer.render(scene, camera);
+          };
+          animate();
         };
 
-        animate();
+        gltfLoaderScript.onerror = () => {
+          console.error("❌ Falha ao carregar GLTFLoader");
+        };
+        document.body.appendChild(gltfLoaderScript);
       };
 
+      arScript.onerror = () => {
+        console.error("❌ Falha ao carregar AR.js");
+      };
       document.body.appendChild(arScript);
     };
 
+    threeScript.onerror = () => {
+      console.error("❌ Falha ao carregar THREE.js");
+    };
     document.body.appendChild(threeScript);
 
-    // Cleanup
     return () => {
       container.innerHTML = "";
     };
@@ -120,10 +152,7 @@ export default function Home() {
       style={{
         width: "100vw",
         height: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "black",
+        backgroundColor: "white",
       }}
     />
   );
