@@ -3,6 +3,8 @@
 import { useEffect, useRef } from "react";
 import type { Matrix4, Group, AnimationClip } from "three";
 import type * as THREEType from "three";
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+
 
 type ARjsSource = {
   ready: boolean;
@@ -15,7 +17,6 @@ type GLTFResult = {
   animations: AnimationClip[];
   [key: string]: unknown;
 };
-
 
 type ARjsContext = {
   init: (callback: () => void) => void;
@@ -32,6 +33,8 @@ declare global {
   interface Window {
     ARjs: ARjs;
     THREE: typeof THREEType;
+    AR?: ARjs;
+    ARJS?: ARjs;
   }
 }
 
@@ -47,7 +50,7 @@ export default function Home() {
     threeScript.src = "https://cdn.jsdelivr.net/npm/three@0.110.0/build/three.min.js";
 
     threeScript.onload = () => {
-      window.THREE = window.THREE || (window as any).THREE;
+      window.THREE = window.THREE || (window as unknown as { THREE: typeof THREEType }).THREE;
 
       // Carrega AR.js (Three.js + marker tracking)
       const arScript = document.createElement("script");
@@ -60,19 +63,17 @@ export default function Home() {
 
         gltfLoaderScript.onload = () => {
           const THREE = window.THREE;
-          // Testa diferentes nomes globais para AR.js
-          // @ts-ignore
-          const ARjs = window.ARjs || window['AR'] || window['ARJS'] || null;
+          const ARjs = window.ARjs || window.AR || window.ARJS || null;
 
-          // @ts-ignore
-          console.log("🔧 Scripts carregados:", { THREE, ARjs, AR: window['AR'], ARJS: window['ARJS'] });
+          console.log("🔧 Scripts carregados:", { THREE, ARjs, AR: window.AR, ARJS: window.ARJS });
 
           if (!THREE) {
             console.error("❌ THREE não carregado.");
             return;
           }
-          const GLTFLoader = (window as any).THREE.GLTFLoader;
-          if (!GLTFLoader) {
+          // Tipagem segura para GLTFLoader
+          const GLTFLoaderCtor = (window.THREE as typeof THREEType & { GLTFLoader: new () => GLTFLoader }).GLTFLoader;
+          if (!GLTFLoaderCtor) {
             console.error("❌ GLTFLoader não carregado.");
             return;
           }
@@ -92,8 +93,8 @@ export default function Home() {
           scene.add(camera);
 
           // Fonte e contexto AR.js
-          const arSource = new ARjs.Source({ renderer, camera });
-          const arContext = new ARjs.Context({
+          const arSource: ARjsSource = new ARjs.Source({ renderer, camera });
+          const arContext: ARjsContext = new ARjs.Context({
             cameraParametersUrl: "/data/camera_para.dat",
             detectionMode: "mono",
           });
@@ -104,7 +105,7 @@ export default function Home() {
 
           // Carrega modelo GLB usando o loader global
           let model: Group | null = null;
-          const loader = new GLTFLoader();
+          const loader = new GLTFLoaderCtor();
           loader.load(
             "/models/Sumo_high_pull.glb",
             (gltf: GLTFResult) => {
