@@ -1,16 +1,26 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import type { Matrix4, Group, AnimationClip } from "three";
+import type * as THREEType from "three";
 
 type ARjsSource = {
   ready: boolean;
   domElement: HTMLVideoElement;
 };
 
+type GLTFResult = {
+  scene: Group;
+  scenes: Group[];
+  animations: AnimationClip[];
+  [key: string]: unknown;
+};
+
+
 type ARjsContext = {
   init: (callback: () => void) => void;
   update: (video: HTMLVideoElement) => void;
-  getProjectionMatrix: () => any; // Corrigido para any
+  getProjectionMatrix: () => Matrix4;
 };
 
 type ARjs = {
@@ -21,7 +31,7 @@ type ARjs = {
 declare global {
   interface Window {
     ARjs: ARjs;
-    THREE: any;
+    THREE: typeof THREEType;
   }
 }
 
@@ -61,7 +71,8 @@ export default function Home() {
             console.error("❌ THREE não carregado.");
             return;
           }
-          if (!THREE.GLTFLoader) {
+          const GLTFLoader = (window as any).THREE.GLTFLoader;
+          if (!GLTFLoader) {
             console.error("❌ GLTFLoader não carregado.");
             return;
           }
@@ -92,18 +103,18 @@ export default function Home() {
           });
 
           // Carrega modelo GLB usando o loader global
-          let model: any = null;
-          const loader = new THREE.GLTFLoader();
+          let model: Group | null = null;
+          const loader = new GLTFLoader();
           loader.load(
             "/models/Sumo_high_pull.glb",
-            (gltf: any) => {
+            (gltf: GLTFResult) => {
               model = gltf.scene;
               model.scale.set(0.2, 0.2, 0.2);
               scene.add(model);
               console.log("✅ Modelo carregado");
             },
             undefined,
-            (err: any) => console.error("❌ Erro ao carregar GLB:", err)
+            (err: ErrorEvent) => console.error("❌ Erro ao carregar GLB:", err)
           );
 
           // Loop de renderização
