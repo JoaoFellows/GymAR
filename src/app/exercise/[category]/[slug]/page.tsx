@@ -98,8 +98,13 @@ export default function Home() {
           container.appendChild(renderer.domElement);
 
           const scene = new THREE.Scene();
-          const camera = new THREE.Camera();
+          const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
           scene.add(camera);
+
+          window.addEventListener("resize", () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+          });
 
           // Luz ambiente fraca (suaviza sombras)
           const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
