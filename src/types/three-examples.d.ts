@@ -1,7 +1,7 @@
 declare module 'three/examples/jsm/loaders/GLTFLoader' {
-  import { Loader } from 'three';
-  import { LoadingManager } from 'three';
-  import { Group, AnimationClip } from 'three';
+  import type { Loader } from 'three';
+  import type { LoadingManager } from 'three';
+  import type { Group, AnimationClip } from 'three';
 
   export class GLTFLoader extends Loader {
     constructor(manager?: LoadingManager);

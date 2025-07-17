@@ -16,8 +16,8 @@ type ARjsContext = {
 };
 
 type ARjs = {
-  Source: new (params: any) => ARjsSource;
-  Context: new (params: any) => ARjsContext;
+  Source: new (params: Record<string, unknown>) => ARjsSource;
+  Context: new (params: Record<string, unknown>) => ARjsContext;
 };
 
 declare global {
@@ -34,6 +34,8 @@ export default function Home() {
     script.src = "https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/three.js/build/ar-threex.js";
     script.async = true;
     document.body.appendChild(script);
+    const container = containerRef.current;
+    if (!container) return;
 
     script.onload = () => {
       const ARjs = window.ARjs;
@@ -46,7 +48,6 @@ export default function Home() {
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setClearColor(0x000000, 0);
 
-      const container = containerRef.current;
       if (!container) return;
       container.appendChild(renderer.domElement);
 
@@ -92,7 +93,6 @@ export default function Home() {
 
     return () => {
       script.remove();
-      const container = containerRef.current;
       if (container) container.innerHTML = "";
     };
   }, []);
