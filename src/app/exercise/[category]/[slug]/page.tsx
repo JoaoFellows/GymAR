@@ -92,9 +92,23 @@ export default function Home() {
           const camera = new THREE.Camera();
           scene.add(camera);
 
+          let arVideoTries = 0;
+          const arVideoMaxTries = 300; // 300 tentativas x 100ms = 30s
           // Fonte e contexto AR.js
           const arSource: ARjsSource = new ARjs.Source({ renderer, camera });
-          container.appendChild(arSource.domElement);
+          //container.appendChild(arSource.domElement);
+          const appendARVideo = () => {
+          if (arSource.domElement instanceof Node) {
+            container.appendChild(arSource.domElement);
+            console.warn("arSource.domElement BOA:", arSource.domElement);
+          } else if (arVideoTries < arVideoMaxTries) {
+            arVideoTries++;
+            setTimeout(appendARVideo, 100);
+          } else {
+            console.error("❌ Falha ao obter acesso à câmera: arSource.domElement não foi criado após 10s.");
+          }
+        };
+        appendARVideo();
           const arContext: ARjsContext = new ARjs.Context({
             cameraParametersUrl: "/data/camera_para.dat",
             detectionMode: "mono",
