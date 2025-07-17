@@ -83,7 +83,7 @@ export default function Home() {
           // Fonte e contexto AR.js
           const arSource = new ARjs.Source({ renderer, camera });
           const arContext = new ARjs.Context({
-            cameraParametersUrl: "https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/three.js/data/camera_para.dat",
+            cameraParametersUrl: "/data/camera_para.dat",
             detectionMode: "mono",
           });
 
