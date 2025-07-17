@@ -11,7 +11,7 @@ declare module 'three/examples/jsm/loaders/GLTFLoader' {
         scene: Group;
         scenes: Group[];
         animations: AnimationClip[];
-        [key: string]: any;
+        [key: string]: unknown;
       }) => void,
       onProgress?: (event: ProgressEvent) => void,
       onError?: (event: ErrorEvent) => void

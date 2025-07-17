@@ -9,7 +9,7 @@ export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    let renderer: THREE.WebGLRenderer;
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     let mixer: THREE.AnimationMixer;
     let model: THREE.Group | null = null;
     let isDragging = false;
@@ -23,7 +23,6 @@ export default function Home() {
       20
     );
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.xr.enabled = true;
     containerRef.current?.appendChild(renderer.domElement);
