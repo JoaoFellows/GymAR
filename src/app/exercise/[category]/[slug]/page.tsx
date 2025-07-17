@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { Matrix4, Group, AnimationClip } from "three";
+import type { Matrix4, Group, AnimationClip, AnimationMixer } from "three";
 import type * as THREEType from "three";
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
@@ -46,6 +46,7 @@ export default function Home() {
     const container = containerRef.current;
     if (!container) return;
 
+
     // Carrega THREE.js
     const threeScript = document.createElement("script");
     threeScript.src = "https://cdn.jsdelivr.net/npm/three@0.110.0/build/three.min.js";
@@ -72,6 +73,9 @@ export default function Home() {
             console.error("❌ THREE não carregado.");
             return;
           }
+
+          const clock = new THREE.Clock();
+          let mixer: AnimationMixer | null = null;
           // Tipagem segura para GLTFLoader
           const GLTFLoaderCtor = (window.THREE as typeof THREEType & { GLTFLoader: new () => GLTFLoader }).GLTFLoader;
           if (!GLTFLoaderCtor) {
@@ -140,6 +144,12 @@ export default function Home() {
               model = gltf.scene;
               model.scale.set(0.2, 0.2, 0.2);
               scene.add(model);
+              mixer = new THREE.AnimationMixer(model);
+              const clip = gltf.animations[0];
+              if (clip) {
+                const action = mixer.clipAction(clip);
+                action.play();
+              }
               console.log("✅ Modelo carregado");
             },
             undefined,
@@ -157,6 +167,11 @@ export default function Home() {
             if (model) {
               model.position.set(0, 0, -1);
               model.quaternion.copy(camera.quaternion);
+            }
+
+            const delta = clock.getDelta();
+            if (mixer) {
+              mixer.update(delta);
             }
 
             renderer.render(scene, camera);
