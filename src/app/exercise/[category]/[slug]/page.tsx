@@ -4,6 +4,28 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
+type ARjsSource = {
+  ready: boolean;
+  domElement: HTMLVideoElement;
+};
+
+type ARjsContext = {
+  init: (callback: () => void) => void;
+  update: (video: HTMLVideoElement) => void;
+  getProjectionMatrix: () => THREE.Matrix4;
+};
+
+type ARjs = {
+  Source: new (params: any) => ARjsSource;
+  Context: new (params: any) => ARjsContext;
+};
+
+declare global {
+  interface Window {
+    ARjs: ARjs;
+  }
+}
+
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -14,26 +36,35 @@ export default function Home() {
     document.body.appendChild(script);
 
     script.onload = () => {
-      // @ts-ignore
       const ARjs = window.ARjs;
+      if (!ARjs) {
+        console.error("ARjs não carregado");
+        return;
+      }
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setClearColor(0x000000, 0);
-      containerRef.current?.appendChild(renderer.domElement);
+
+      const container = containerRef.current;
+      if (!container) return;
+      container.appendChild(renderer.domElement);
 
       const scene = new THREE.Scene();
       const camera = new THREE.Camera();
       scene.add(camera);
 
-      // Inicializa AR.js
-      // @ts-ignore
       const arSource = new ARjs.Source({ renderer, camera });
-      // @ts-ignore
-      const arContext = new ARjs.Context({ cameraParametersUrl: "https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/three.js/data/camera_para.dat", detectionMode: "mono" });
-      arContext.init(() => camera.projectionMatrix.copy(arContext.getProjectionMatrix()));
+      const arContext = new ARjs.Context({
+        cameraParametersUrl:
+          "https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/three.js/data/camera_para.dat",
+        detectionMode: "mono",
+      });
 
-      // Modelo 3D
+      arContext.init(() => {
+        camera.projectionMatrix.copy(arContext.getProjectionMatrix());
+      });
+
       let model: THREE.Group | null = null;
       const loader = new GLTFLoader();
       loader.load("/models/Sumo_high_pull.glb", (gltf) => {
@@ -42,26 +73,27 @@ export default function Home() {
         scene.add(model);
       });
 
-      // Render loop
       const animate = () => {
         requestAnimationFrame(animate);
-        if (arSource.ready) arContext.update(arSource.domElement);
+        if (arSource.ready) {
+          arContext.update(arSource.domElement);
+        }
 
-        // Posiciona o modelo sempre à frente da câmera
         if (model) {
-          // Z positivo é para frente da câmera
-          model.position.set(0, 0, -1); // 1 metro à frente
-          model.quaternion.copy(camera.quaternion); // Segue a rotação da câmera
+          model.position.set(0, 0, -1);
+          model.quaternion.copy(camera.quaternion);
         }
 
         renderer.render(scene, camera);
       };
+
       animate();
     };
 
     return () => {
       script.remove();
-      if (containerRef.current) containerRef.current.innerHTML = "";
+      const container = containerRef.current;
+      if (container) container.innerHTML = "";
     };
   }, []);
 
