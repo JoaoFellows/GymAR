@@ -97,6 +97,15 @@ export default function Home() {
           const camera = new THREE.Camera();
           scene.add(camera);
 
+          // Luz ambiente fraca (suaviza sombras)
+          const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+          scene.add(ambientLight);
+
+          // Luz direcional (simula o sol)
+          const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+          directionalLight.position.set(1, 1, 1); // direção da luz
+          scene.add(directionalLight);
+
           // Fonte e contexto AR.js
           const arSource: ARjsSource = new ARjs.Source({ sourceType: "webcam" });
           arSource.init(() => {
