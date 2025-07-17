@@ -95,7 +95,7 @@ export default function Home() {
           let arVideoTries = 0;
           const arVideoMaxTries = 300; // 300 tentativas x 100ms = 30s
           // Fonte e contexto AR.js
-          const arSource: ARjsSource = new ARjs.Source({ renderer, camera });
+          const arSource: ARjsSource = new ARjs.Source({ sourceType: "webcam" });
           //container.appendChild(arSource.domElement);
           const appendARVideo = () => {
           if (arSource.domElement instanceof Node) {
