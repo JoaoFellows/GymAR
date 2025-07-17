@@ -93,8 +93,6 @@ export default function Home() {
           const camera = new THREE.Camera();
           scene.add(camera);
 
-          let arVideoTries = 0;
-          const arVideoMaxTries = 300; // 300 tentativas x 100ms = 30s
           // Fonte e contexto AR.js
           const arSource: ARjsSource = new ARjs.Source({ sourceType: "webcam" });
           //container.appendChild(arSource.domElement);
