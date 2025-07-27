@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-// import { getAllExercises } from '../src/server/service/exercise';
+import { getAllExercises } from '../src/server/service/exercise';
 import fs from 'fs';
 import path from 'path';
 
