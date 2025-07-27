@@ -54,10 +54,13 @@ export default function Home() {
             (session as XRSessionWithHitTest).requestHitTestSource({ space: refSpace }).then((source: XRHitTestSource) => {
               hitTestSource = source;
               localSpace = renderer.xr.getReferenceSpace();
+            })
+            .catch((err) => {
+              console.error("Request hit source failed", err);
             });
           })
           .catch((err) => {
-            console.error("Hit test setup failed", err);
+            console.error("Request reference space failed", err);
           });
 
           session.addEventListener("end", () => {
