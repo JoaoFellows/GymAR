@@ -13,7 +13,7 @@ export default function Home() {
   }
 
   useEffect(() => {
-    let renderer: THREE.WebGLRenderer;
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     let mixer: THREE.AnimationMixer;
     let model: THREE.Group | null = null;
     let hitTestSource: XRHitTestSource | null = null;
@@ -23,7 +23,6 @@ export default function Home() {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.xr.enabled = true;
     containerRef.current?.appendChild(renderer.domElement);
@@ -52,10 +51,13 @@ export default function Home() {
         const session = renderer.xr.getSession();
         if (session && typeof (session as XRSessionWithHitTest).requestHitTestSource === "function") {
           session.requestReferenceSpace("viewer").then((refSpace) => {
-          (session as XRSessionWithHitTest).requestHitTestSource({ space: refSpace }).then((source: XRHitTestSource) => {
-          hitTestSource = source;
-          localSpace = renderer.xr.getReferenceSpace();
-          });
+            (session as XRSessionWithHitTest).requestHitTestSource({ space: refSpace }).then((source: XRHitTestSource) => {
+              hitTestSource = source;
+              localSpace = renderer.xr.getReferenceSpace();
+            });
+          })
+          .catch((err) => {
+            console.error("Hit test setup failed", err);
           });
 
           session.addEventListener("end", () => {
