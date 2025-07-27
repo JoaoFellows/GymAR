@@ -8,6 +8,10 @@ import { ARButton } from "three/examples/jsm/webxr/ARButton";
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  interface XRSessionWithHitTest extends XRSession {
+    requestHitTestSource(options: XRHitTestOptionsInit): Promise<XRHitTestSource>;
+  }
+
   useEffect(() => {
     let renderer: THREE.WebGLRenderer;
     let mixer: THREE.AnimationMixer;
@@ -46,9 +50,9 @@ export default function Home() {
     renderer.setAnimationLoop((timestamp, frame) => {
       if (frame && !hitTestRequested) {
         const session = renderer.xr.getSession();
-        if (session) {
+        if (session && typeof (session as XRSessionWithHitTest).requestHitTestSource === "function") {
           session.requestReferenceSpace("viewer").then((refSpace) => {
-          (session as any).requestHitTestSource({ space: refSpace }).then((source: XRHitTestSource) => {
+          (session as XRSessionWithHitTest).requestHitTestSource({ space: refSpace }).then((source: XRHitTestSource) => {
           hitTestSource = source;
           localSpace = renderer.xr.getReferenceSpace();
           });
