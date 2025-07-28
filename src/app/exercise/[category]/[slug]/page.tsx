@@ -40,9 +40,7 @@ export default function Home() {
 
       mixer = new THREE.AnimationMixer(model);
       gltf.animations.forEach((clip) => {
-        if (mixer) {
-          mixer.clipAction(clip).play();
-        }
+        mixer?.clipAction(clip).play();
       });
 
       scene.add(model);
@@ -55,7 +53,7 @@ export default function Home() {
     scene.add(controller);
 
     renderer.xr.addEventListener("sessionstart", () => {
-      (async () => {
+      void (async () => {
         const session = renderer.xr.getSession();
         if (!session) return;
 
@@ -108,7 +106,7 @@ export default function Home() {
         previousX = event.touches[0].clientX;
         previousY = event.touches[0].clientY;
       }
-      
+     
     };
 
     const onTouchMove = (event: TouchEvent) => {
@@ -118,7 +116,6 @@ export default function Home() {
         const deltaY = event.touches[0].clientY - previousY;
 
         const sensitivity = 0.005;
-
         model.position.x += deltaX * sensitivity;
         model.position.z += deltaY * sensitivity;
 
