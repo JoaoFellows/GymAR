@@ -51,13 +51,10 @@ export default function Home() {
   renderer.setAnimationLoop(() => {
     if (model) {
       const cameraMatrix = new THREE.Matrix4().copy(renderer.xr.getCamera().matrixWorld);
-      const position = new THREE.Vector3(0, -desiredHeight / 2, -1); // 1 metro à frente da câmera
+      const position = new THREE.Vector3(0, -desiredHeight / 2, -3); 
       position.applyMatrix4(cameraMatrix);
 
       model.position.copy(position);
-
-      // Faz o modelo sempre olhar na mesma direção da câmera
-      model.quaternion.copy(renderer.xr.getCamera().quaternion);
     }
 
     if (mixer) mixer.update(0.01);
