@@ -67,8 +67,7 @@ export default function Home() {
         const touch = event.touches[0];
         const deltaX = touch.clientX - previousTouchX;
         const deltaY = touch.clientY - previousTouchY;
-
-        // Sensibilidade ajustável
+        
         const sensitivity = 0.005;
 
         model.position.x += deltaX * sensitivity;
