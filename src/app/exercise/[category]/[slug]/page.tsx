@@ -41,7 +41,7 @@ export default function Home() {
       const scale = desiredHeight / modelHeight;
 
       model.scale.setScalar(scale);
-      model.position.set(0, 0, -2); // posição inicial
+      model.position.set(0, 0, -2); // posição inicial fixa no Z
       scene.add(model);
 
       mixer = new THREE.AnimationMixer(model);
@@ -60,7 +60,7 @@ export default function Home() {
       if (!isTouching || !model || !previousTouches) return;
 
       const sensitivityXY = 0.005;
-      const sensitivityZ = 0.01;
+      const rotationSpeed = 0.01;
 
       if (event.touches[0] && previousTouches[0]) {
         const deltaX = event.touches[0].clientX - previousTouches[0].clientX;
@@ -71,23 +71,13 @@ export default function Home() {
       }
 
       if (event.touches.length === 2 && previousTouches.length === 2) {
-        const dist = (touches: TouchList) => {
-          if (touches[0] && touches[1]) {
-            const dx = touches[0].clientX - touches[1].clientX;
-            const dy = touches[0].clientY - touches[1].clientY;
-            return Math.sqrt(dx * dx + dy * dy);
-          }
-        };
+        if (event.touches[0] && previousTouches[0] && event.touches[1] && previousTouches[1]) {
+          const currMidX = (event.touches[0].clientX + event.touches[1].clientX) / 2;
+          const prevMidX = (previousTouches[0].clientX + previousTouches[1].clientX) / 2;
 
-        const prevDist = dist(previousTouches);
-        const currDist = dist(event.touches);
-        let deltaZ = 0;
-        if(currDist && prevDist) {
-          deltaZ = (currDist - prevDist) * sensitivityZ;
+          const deltaRotation = currMidX - prevMidX;
+          model.rotation.y += deltaRotation * rotationSpeed;
         }
-        
-
-        model.position.z += deltaZ;
       }
 
       previousTouches = event.touches;
