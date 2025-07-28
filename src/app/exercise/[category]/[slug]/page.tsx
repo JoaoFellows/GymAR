@@ -64,17 +64,19 @@ export default function Home() {
       if (!isTouching || !model || event.touches.length !== 1) return;
 
       if(event.touches[0]) {
-        const deltaX = event.touches[0].clientX - previousTouchX;
-        const deltaY = event.touches[0].clientY - previousTouchY;
+        const touch = event.touches[0];
+        const deltaX = touch.clientX - previousTouchX;
+        const deltaY = touch.clientY - previousTouchY;
 
-        model.position.x += deltaX * 0.005;
-        model.position.z += deltaY * 0.005;
+        // Sensibilidade ajustável
+        const sensitivity = 0.005;
 
-        previousTouchX = event.touches[0].clientX;
-        previousTouchY = event.touches[0].clientY;
+        model.position.x += deltaX * sensitivity;
+        model.position.y -= deltaY * sensitivity; // Invertido porque o Y da tela cresce para baixo
+
+        previousTouchX = touch.clientX;
+        previousTouchY = touch.clientY;
       }
-
-      
     };
 
     const onTouchEnd = () => {
