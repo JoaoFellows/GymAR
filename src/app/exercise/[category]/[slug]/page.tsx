@@ -36,7 +36,7 @@ export default function Home() {
       const height = box.max.y - box.min.y;
       const scale = desiredHeight / height;
       model.scale.setScalar(scale);
-      model.visible = false; // escondido até ser colocado
+      model.visible = false;
 
       mixer = new THREE.AnimationMixer(model);
       gltf.animations.forEach((clip) => {
@@ -44,7 +44,7 @@ export default function Home() {
           mixer.clipAction(clip).play();
         }
       });
-      
+
       scene.add(model);
     });
 
@@ -54,22 +54,23 @@ export default function Home() {
     const controller = renderer.xr.getController(0);
     scene.add(controller);
 
-    renderer.xr.addEventListener("sessionstart", async () => {
-      const session = renderer.xr.getSession();
-      if (!session) return;
+    renderer.xr.addEventListener("sessionstart", () => {
+      (async () => {
+        const session = renderer.xr.getSession();
+        if (!session) return;
 
-      const viewerSpace = await session.requestReferenceSpace("viewer");
+        const viewerSpace = await session.requestReferenceSpace("viewer");
 
-      // Verificação de existência da função antes de invocar
-      if (typeof session.requestHitTestSource === "function") {
-        hitTestSource = (await session.requestHitTestSource({ space: viewerSpace })) ?? null;
-      } else {
-        console.warn("requestHitTestSource is not supported in this session.");
-        hitTestSource = null;
-      }
+        if (typeof session.requestHitTestSource === "function") {
+          hitTestSource = (await session.requestHitTestSource({ space: viewerSpace })) ?? null;
+        } else {
+          console.warn("requestHitTestSource is not supported in this session.");
+          hitTestSource = null;
+        }
 
-      localSpace = await session.requestReferenceSpace("local-floor");
-});
+        localSpace = await session.requestReferenceSpace("local-floor");
+      })();
+    });
 
     renderer.setAnimationLoop((timestamp, frame) => {
       if (model && !modelPlaced && frame && hitTestSource && localSpace) {
@@ -79,7 +80,11 @@ export default function Home() {
           const pose = hit.getPose(localSpace);
           if (pose) {
             model.visible = true;
-            model.position.set(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z);
+            model.position.set(
+              pose.transform.position.x,
+              pose.transform.position.y,
+              pose.transform.position.z
+            );
             setModelPlaced(true);
           }
         }
@@ -99,7 +104,6 @@ export default function Home() {
     const onTouchStart = (event: TouchEvent) => {
       if (!modelPlaced || event.touches.length !== 1) return;
       isTouching = true;
-
       if(event.touches[0]) {
         previousX = event.touches[0].clientX;
         previousY = event.touches[0].clientY;
@@ -109,7 +113,6 @@ export default function Home() {
 
     const onTouchMove = (event: TouchEvent) => {
       if (!model || !isTouching || event.touches.length !== 1) return;
-
       if(event.touches[0]) {
         const deltaX = event.touches[0].clientX - previousX;
         const deltaY = event.touches[0].clientY - previousY;
@@ -117,8 +120,7 @@ export default function Home() {
         const sensitivity = 0.005;
 
         model.position.x += deltaX * sensitivity;
-        model.position.z += deltaY * sensitivity; // mover para frente/trás com touch vertical
-        // model.position.y não muda: mantém pés colados ao chão
+        model.position.z += deltaY * sensitivity;
 
         previousX = event.touches[0].clientX;
         previousY = event.touches[0].clientY;
