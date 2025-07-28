@@ -49,43 +49,60 @@ export default function Home() {
     });
 
     let isTouching = false;
-    let previousTouchX = 0;
-    let previousTouchY = 0;
+    let previousTouches: TouchList | null = null;
 
     const onTouchStart = (event: TouchEvent) => {
-      if (event.touches.length === 1 && event.touches[0]) {
-        isTouching = true;
-        previousTouchX = event.touches[0].clientX;
-        previousTouchY = event.touches[0].clientY;
-      }
+      isTouching = true;
+      previousTouches = event.touches;
     };
 
     const onTouchMove = (event: TouchEvent) => {
-      if (!isTouching || !model || event.touches.length !== 1) return;
+      if (!isTouching || !model || !previousTouches) return;
 
-      if(event.touches[0]) {
-        const touch = event.touches[0];
-        const deltaX = touch.clientX - previousTouchX;
-        const deltaY = touch.clientY - previousTouchY;
-        
-        const sensitivity = 0.005;
+      const sensitivityXY = 0.005;
+      const sensitivityZ = 0.01;
 
-        model.position.x += deltaX * sensitivity;
-        model.position.y -= deltaY * sensitivity; // Invertido porque o Y da tela cresce para baixo
+      if (event.touches[0] && previousTouches[0]) {
+        const deltaX = event.touches[0].clientX - previousTouches[0].clientX;
+        const deltaY = event.touches[0].clientY - previousTouches[0].clientY;
 
-        previousTouchX = touch.clientX;
-        previousTouchY = touch.clientY;
+        model.position.x += deltaX * sensitivityXY;
+        model.position.y -= deltaY * sensitivityXY;
       }
+
+      if (event.touches.length === 2 && previousTouches.length === 2) {
+        const dist = (touches: TouchList) => {
+          if (touches[0] && touches[1]) {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+          }
+        };
+
+        const prevDist = dist(previousTouches);
+        const currDist = dist(event.touches);
+        let deltaZ = 0;
+        if(currDist && prevDist) {
+          deltaZ = (currDist - prevDist) * sensitivityZ;
+        }
+        
+
+        model.position.z += deltaZ;
+      }
+
+      previousTouches = event.touches;
     };
 
     const onTouchEnd = () => {
       isTouching = false;
+      previousTouches = null;
     };
 
     const domElement = renderer.domElement;
     domElement.addEventListener("touchstart", onTouchStart);
     domElement.addEventListener("touchmove", onTouchMove);
     domElement.addEventListener("touchend", onTouchEnd);
+    domElement.addEventListener("touchcancel", onTouchEnd);
 
     renderer.setAnimationLoop(() => {
       if (mixer) mixer.update(0.01);
@@ -97,6 +114,7 @@ export default function Home() {
       domElement.removeEventListener("touchstart", onTouchStart);
       domElement.removeEventListener("touchmove", onTouchMove);
       domElement.removeEventListener("touchend", onTouchEnd);
+      domElement.removeEventListener("touchcancel", onTouchEnd);
     };
   }, []);
 
