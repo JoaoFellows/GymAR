@@ -46,6 +46,8 @@ export default function Home() {
       gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
     });
 
+    let modelPlaced = false; 
+
     renderer.setAnimationLoop((timestamp, frame) => {
       if (frame && !hitTestRequested) {
         const session = renderer.xr.getSession();
@@ -72,7 +74,7 @@ export default function Home() {
         }
       }
 
-      if (frame && hitTestSource && localSpace && model) {
+      if (frame && hitTestSource && localSpace && model && !modelPlaced) {
         const hitTestResults = frame.getHitTestResults(hitTestSource);
         if (hitTestResults.length > 0) {
           const hit = hitTestResults[0];
@@ -86,6 +88,7 @@ export default function Home() {
                 pose.transform.position.z
               );
               model.rotation.set(0, Math.PI, 0); // opcional: vira o modelo
+              modelPlaced = true; // modelo colocado, não tenta mais
             }
           }
         }
