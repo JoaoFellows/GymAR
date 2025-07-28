@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { ARButton } from "three/examples/jsm/webxr/ARButton";
@@ -8,96 +8,131 @@ import { ARButton } from "three/examples/jsm/webxr/ARButton";
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
   const desiredHeight = 1.75;
+  const [modelPlaced, setModelPlaced] = useState(false);
 
   useEffect(() => {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    let mixer: THREE.AnimationMixer;
-    let model: THREE.Group | null = null;
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      70,
-      window.innerWidth / window.innerHeight,
-      0.01,
-      20
-    );
-
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.xr.enabled = true;
-    containerRef.current?.appendChild(renderer.domElement);
+    renderer.xr.setReferenceSpaceType("local-floor");
 
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+    containerRef.current?.appendChild(renderer.domElement);
     document.body.appendChild(ARButton.createButton(renderer));
 
     const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
     light.position.set(0.5, 1, 0.25);
     scene.add(light);
 
+    let model: THREE.Group | null = null;
+    let mixer: THREE.AnimationMixer | null = null;
+
     const loader = new GLTFLoader();
     loader.load("/models/Sumo_high_pull.glb", (gltf) => {
       model = gltf.scene;
 
-      const boundingBox = new THREE.Box3().setFromObject(gltf.scene);
-      const modelHeight = boundingBox.max.y - boundingBox.min.y;
-      const scale = desiredHeight / modelHeight;
-
+      const box = new THREE.Box3().setFromObject(model);
+      const height = box.max.y - box.min.y;
+      const scale = desiredHeight / height;
       model.scale.setScalar(scale);
-      model.position.set(0, 0, -2); // posição inicial fixa no Z
-      scene.add(model);
+      model.visible = false; // escondido até ser colocado
 
       mixer = new THREE.AnimationMixer(model);
-      gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
+      gltf.animations.forEach((clip) => {
+        if (mixer) {
+          mixer.clipAction(clip).play();
+        }
+      });
+      
+      scene.add(model);
     });
 
-    let isTouching = false;
-    let previousTouches: TouchList | null = null;
+    let hitTestSource: XRHitTestSource | null = null;
+    let localSpace: XRReferenceSpace | null = null;
 
-    const onTouchStart = (event: TouchEvent) => {
-      isTouching = true;
-      previousTouches = event.touches;
-    };
+    const controller = renderer.xr.getController(0);
+    scene.add(controller);
 
-    const onTouchMove = (event: TouchEvent) => {
-      if (!isTouching || !model || !previousTouches) return;
+    renderer.xr.addEventListener("sessionstart", async () => {
+      const session = renderer.xr.getSession();
+      if (!session) return;
 
-      const sensitivityXY = 0.005;
-      const rotationSpeed = 0.01;
+      const viewerSpace = await session.requestReferenceSpace("viewer");
 
-      if (event.touches[0] && previousTouches[0]) {
-        const deltaX = event.touches[0].clientX - previousTouches[0].clientX;
-        const deltaY = event.touches[0].clientY - previousTouches[0].clientY;
-
-        model.position.x += deltaX * sensitivityXY;
-        model.position.y -= deltaY * sensitivityXY;
+      // Verificação de existência da função antes de invocar
+      if (typeof session.requestHitTestSource === "function") {
+        hitTestSource = (await session.requestHitTestSource({ space: viewerSpace })) ?? null;
+      } else {
+        console.warn("requestHitTestSource is not supported in this session.");
+        hitTestSource = null;
       }
 
-      if (event.touches.length === 2 && previousTouches.length === 2) {
-        if (event.touches[0] && previousTouches[0] && event.touches[1] && previousTouches[1]) {
-          const currMidX = (event.touches[0].clientX + event.touches[1].clientX) / 2;
-          const prevMidX = (previousTouches[0].clientX + previousTouches[1].clientX) / 2;
+      localSpace = await session.requestReferenceSpace("local-floor");
+});
 
-          const deltaRotation = currMidX - prevMidX;
-          model.rotation.y += deltaRotation * rotationSpeed;
+    renderer.setAnimationLoop((timestamp, frame) => {
+      if (model && !modelPlaced && frame && hitTestSource && localSpace) {
+        const hitTestResults = frame.getHitTestResults(hitTestSource);
+        if (hitTestResults[0]) {
+          const hit = hitTestResults[0];
+          const pose = hit.getPose(localSpace);
+          if (pose) {
+            model.visible = true;
+            model.position.set(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z);
+            setModelPlaced(true);
+          }
         }
       }
 
-      previousTouches = event.touches;
+      if (mixer) mixer.update(0.01);
+      renderer.render(scene, camera);
+    });
+
+    // TOUCH CONTROLS - apenas movimentação x/y
+    let isTouching = false;
+    let previousX = 0;
+    let previousY = 0;
+
+    const domElement = renderer.domElement;
+
+    const onTouchStart = (event: TouchEvent) => {
+      if (!modelPlaced || event.touches.length !== 1) return;
+      isTouching = true;
+
+      if(event.touches[0]) {
+        previousX = event.touches[0].clientX;
+        previousY = event.touches[0].clientY;
+      }
+      
+    };
+
+    const onTouchMove = (event: TouchEvent) => {
+      if (!model || !isTouching || event.touches.length !== 1) return;
+
+      if(event.touches[0]) {
+        const deltaX = event.touches[0].clientX - previousX;
+        const deltaY = event.touches[0].clientY - previousY;
+
+        const sensitivity = 0.005;
+
+        model.position.x += deltaX * sensitivity;
+        model.position.z += deltaY * sensitivity; // mover para frente/trás com touch vertical
+        // model.position.y não muda: mantém pés colados ao chão
+
+        previousX = event.touches[0].clientX;
+        previousY = event.touches[0].clientY;
+      }
     };
 
     const onTouchEnd = () => {
       isTouching = false;
-      previousTouches = null;
     };
 
-    const domElement = renderer.domElement;
     domElement.addEventListener("touchstart", onTouchStart);
     domElement.addEventListener("touchmove", onTouchMove);
     domElement.addEventListener("touchend", onTouchEnd);
     domElement.addEventListener("touchcancel", onTouchEnd);
-
-    renderer.setAnimationLoop(() => {
-      if (mixer) mixer.update(0.01);
-      renderer.render(scene, camera);
-    });
 
     return () => {
       renderer.dispose();
