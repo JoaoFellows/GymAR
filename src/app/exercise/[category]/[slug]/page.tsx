@@ -6,6 +6,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { ARButton } from "three/examples/jsm/webxr/ARButton";
 
 export default function Home() {
+  const desiredHeight = 1.75;
   const containerRef = useRef<HTMLDivElement>(null);
 
   interface XRSessionWithHitTest extends XRSession {
@@ -13,92 +14,60 @@ export default function Home() {
   }
 
   useEffect(() => {
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    let mixer: THREE.AnimationMixer;
-    let model: THREE.Group | null = null;
-    let hitTestSource: XRHitTestSource | null = null;
-    let localSpace: XRReferenceSpace | null = null;
-    let hitTestRequested = false;
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  let mixer: THREE.AnimationMixer;
+  let model: THREE.Group | null = null;
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.xr.enabled = true;
-    containerRef.current?.appendChild(renderer.domElement);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.xr.enabled = true;
+  containerRef.current?.appendChild(renderer.domElement);
 
-    document.body.appendChild(
-      ARButton.createButton(renderer, { requiredFeatures: ["hit-test"] })
-    );
+  document.body.appendChild(ARButton.createButton(renderer));
 
-    const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-    light.position.set(0.5, 1, 0.25);
-    scene.add(light);
+  const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+  light.position.set(0.5, 1, 0.25);
+  scene.add(light);
 
-    const loader = new GLTFLoader();
-    loader.load("/models/Sumo_high_pull.glb", (gltf) => {
-      model = gltf.scene;
-      model.scale.set(0.2, 0.2, 0.2);
-      model.visible = false; // só aparece quando a superfície for detectada
-      scene.add(model);
+  const loader = new GLTFLoader();
+  loader.load("/models/Sumo_high_pull.glb", (gltf) => {
+    model = gltf.scene;
 
-      mixer = new THREE.AnimationMixer(model);
-      gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
-    });
+    // Ajuste a escala para simular altura de ~1.75m
+    const boundingBox = new THREE.Box3().setFromObject(gltf.scene);
+    const modelHeight = boundingBox.max.y - boundingBox.min.y;
+    const scale = desiredHeight / modelHeight;
 
-    renderer.setAnimationLoop((timestamp, frame) => {
-      if (frame && !hitTestRequested) {
-        const session = renderer.xr.getSession();
-        if (session && typeof (session as XRSessionWithHitTest).requestHitTestSource === "function") {
-          session.requestReferenceSpace("viewer").then((refSpace) => {
-            (session as XRSessionWithHitTest).requestHitTestSource({ space: refSpace }).then((source: XRHitTestSource) => {
-              hitTestSource = source;
-              localSpace = renderer.xr.getReferenceSpace();
-            })
-            .catch((err) => {
-              console.error("Request hit source failed", err);
-            });
-          })
-          .catch((err) => {
-            console.error("Request reference space failed", err);
-          });
+    model.scale.setScalar(scale);
 
-          session.addEventListener("end", () => {
-          hitTestSource = null;
-          hitTestRequested = false;
-        });
+    scene.add(model);
 
-          hitTestRequested = true;
-        }
-      }
+    mixer = new THREE.AnimationMixer(model);
+    gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
+  });
 
-      if (frame && hitTestSource && localSpace && model) {
-        const hitTestResults = frame.getHitTestResults(hitTestSource);
-        if (hitTestResults.length > 0) {
-          const hit = hitTestResults[0];
-          if (hit) {
-            const pose = hit.getPose(localSpace);
-            if (pose) {
-              model.visible = true;
-              model.position.set(
-                pose.transform.position.x,
-                pose.transform.position.y,
-                pose.transform.position.z
-              );
-              model.rotation.set(0, Math.PI, 0); // opcional: vira o modelo
-            }
-          }
-        }
-      }
+  renderer.setAnimationLoop(() => {
+    if (model) {
+      const cameraMatrix = new THREE.Matrix4().copy(renderer.xr.getCamera().matrixWorld);
+      const position = new THREE.Vector3(0, -desiredHeight / 2, -1); // 1 metro à frente da câmera
+      position.applyMatrix4(cameraMatrix);
 
-      if (mixer) mixer.update(0.01);
-      renderer.render(scene, camera);
-    });
+      model.position.copy(position);
 
-    return () => {
-      renderer.dispose();
-    };
-  }, []);
+      // Faz o modelo sempre olhar na mesma direção da câmera
+      model.quaternion.copy(renderer.xr.getCamera().quaternion);
+    }
+
+    if (mixer) mixer.update(0.01);
+    renderer.render(scene, camera);
+  });
+
+  return () => {
+    renderer.dispose();
+  };
+}, []);
 
   return <div ref={containerRef} style={{ width: "100vw", height: "100vh" }} />;
 }
