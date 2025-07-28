@@ -6,18 +6,21 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { ARButton } from "three/examples/jsm/webxr/ARButton";
 
 export default function Home() {
-  const desiredHeight = 1.75; 
   const containerRef = useRef<HTMLDivElement>(null);
+  const desiredHeight = 1.75;
 
   useEffect(() => {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     let mixer: THREE.AnimationMixer;
     let model: THREE.Group | null = null;
-    let isTouching = false;
-    let previousTouchX = 0;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+    const camera = new THREE.PerspectiveCamera(
+      70,
+      window.innerWidth / window.innerHeight,
+      0.01,
+      20
+    );
 
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.xr.enabled = true;
@@ -36,29 +39,43 @@ export default function Home() {
       const boundingBox = new THREE.Box3().setFromObject(gltf.scene);
       const modelHeight = boundingBox.max.y - boundingBox.min.y;
       const scale = desiredHeight / modelHeight;
-      model.scale.setScalar(scale);
 
+      model.scale.setScalar(scale);
+      model.position.set(0, 0, -2); // posição inicial
       scene.add(model);
 
       mixer = new THREE.AnimationMixer(model);
       gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
     });
 
-  const onTouchStart = (event: TouchEvent) => {
-    if (event.touches.length > 0 && event.touches[0]) {
-      isTouching = true;
-      previousTouchX = event.touches[0].clientX;
-    }
-  };
+    let isTouching = false;
+    let previousTouchX = 0;
+    let previousTouchY = 0;
 
+    const onTouchStart = (event: TouchEvent) => {
+      if (event.touches.length === 1 && event.touches[0]) {
+        isTouching = true;
+        previousTouchX = event.touches[0].clientX;
+        previousTouchY = event.touches[0].clientY;
+      }
+    };
 
-  const onTouchMove = (event: TouchEvent) => {
-    if (isTouching && model && event.touches.length > 0 && event.touches[0]) {
-      const deltaX = event.touches[0].clientX - previousTouchX;
-      model.rotation.y += deltaX * 0.01;
-      previousTouchX = event.touches[0].clientX;
-    }
-  };
+    const onTouchMove = (event: TouchEvent) => {
+      if (!isTouching || !model || event.touches.length !== 1) return;
+
+      if(event.touches[0]) {
+        const deltaX = event.touches[0].clientX - previousTouchX;
+        const deltaY = event.touches[0].clientY - previousTouchY;
+
+        model.position.x += deltaX * 0.005;
+        model.position.z += deltaY * 0.005;
+
+        previousTouchX = event.touches[0].clientX;
+        previousTouchY = event.touches[0].clientY;
+      }
+
+      
+    };
 
     const onTouchEnd = () => {
       isTouching = false;
@@ -70,14 +87,6 @@ export default function Home() {
     domElement.addEventListener("touchend", onTouchEnd);
 
     renderer.setAnimationLoop(() => {
-      if (model) {
-        const cameraMatrix = new THREE.Matrix4().copy(renderer.xr.getCamera().matrixWorld);
-        const position = new THREE.Vector3(0, -desiredHeight / 2, -3); 
-        position.applyMatrix4(cameraMatrix);
-
-        model.position.copy(position);
-      }
-
       if (mixer) mixer.update(0.01);
       renderer.render(scene, camera);
     });
