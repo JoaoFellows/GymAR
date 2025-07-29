@@ -16,7 +16,7 @@ export default function ScanPage() {
           { facingMode: "environment" }, // Força o uso da câmera traseira
           {
             fps: 10,
-            qrbox: { width: 250, height: 250 },
+            //qrbox: { width: 250, height: 250 },
           },
           (text: string) => {
             console.log("QR Code:", text);
