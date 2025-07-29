@@ -69,12 +69,11 @@ export default function ARModel() {
     let localSpace: XRReferenceSpace | null = null;
 
     renderer.xr.addEventListener("sessionstart", () => {
-  (async () => {
+  void (async () => {
     const session = renderer.xr.getSession();
     if (!session) return;
 
     const viewerSpace = await session.requestReferenceSpace("viewer");
-
     const hitTestSourceMaybe = await session.requestHitTestSource?.({ space: viewerSpace });
     hitTestSource = hitTestSourceMaybe ?? null;
 
@@ -85,6 +84,7 @@ export default function ARModel() {
     localSpace = await session.requestReferenceSpace("local-floor");
   })();
 });
+
 
 
     renderer.setAnimationLoop((timestamp, frame) => {
