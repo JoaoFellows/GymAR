@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef} from "react";
+import { useParams } from "next/navigation";
 import * as THREE from "three";
 import { ARButton } from "three/examples/jsm/webxr/ARButton";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 export default function ARModel() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const params = useParams();
+  const slug = params.slug
+    ? (typeof params.slug === "string" ? params.slug : params.slug[0])
+    : undefined;
 
   useEffect(() => {
     const scene = new THREE.Scene();
@@ -43,7 +48,7 @@ export default function ARModel() {
     scene.add(reticle);
 
     const loader = new GLTFLoader();
-    loader.load("/models/sumo3.glb", (gltf) => {
+    loader.load(`/models/${slug}.glb`, (gltf) => {
       model = gltf.scene;
       model.visible = false;
 
@@ -147,7 +152,7 @@ export default function ARModel() {
       dom.removeEventListener("touchend", onTouchEnd);
       dom.removeEventListener("touchcancel", onTouchEnd);
     };
-  }, []);
+  }, [slug]);
 
   return (
     <div ref={containerRef} style={{ width: "100vw", height: "100vh", position: "relative" }}>
