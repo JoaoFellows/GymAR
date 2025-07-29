@@ -10,7 +10,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:gap-8">
           <Link
             className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 text-white hover:bg-white/20"
-            href=""
+            href="/scan"
           >
             <div className="text-lg items-center justify-center flex flex-col gap-2 text-center">
               <ScanQrCode className="h-40 w-30 text-white" />
