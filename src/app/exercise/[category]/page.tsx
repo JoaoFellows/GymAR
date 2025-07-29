@@ -10,9 +10,9 @@ const exercises = [
     // Upper body exercises
     {
         id: 1,
-        title: "Flexões",
-        slug: "flexoes",
-        description: "Um exercício para o peito e tríceps.",
+        title: "Abdominal Bicicleta",
+        slug: "abdominal-bicicleta",
+        description: "Exercício para o abdômen.",
         category: "upper-body",
     },
     {
