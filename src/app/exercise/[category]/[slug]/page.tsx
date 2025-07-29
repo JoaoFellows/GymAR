@@ -43,7 +43,7 @@ export default function ARModel() {
     scene.add(reticle);
 
     const loader = new GLTFLoader();
-    loader.load("/models/curl.glb", (gltf) => {
+    loader.load("/models/curl2.glb", (gltf) => {
       model = gltf.scene;
       model.visible = false;
 
