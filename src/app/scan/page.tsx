@@ -12,25 +12,8 @@ export default function ScanPage() {
 
     const startScanner = async () => {
       try {
-        const devices = await Html5Qrcode.getCameras();
-
-        if (!devices || devices.length === 0) {
-          console.error("Nenhuma câmera disponível.");
-          return;
-        }
-
-        // Tenta achar câmera traseira
-        const backCamera = devices.find(device =>
-          device.label.toLowerCase().includes("back")
-        ) ?? devices[0]; // Fallback: primeira câmera
-
-        if (!backCamera) {
-          console.error("Nenhuma câmera traseira encontrada.");
-          return;
-        }
-
         await scanner.start(
-          backCamera.id,
+          { facingMode: "environment" }, // Força o uso da câmera traseira
           {
             fps: 10,
             qrbox: { width: 250, height: 250 },
