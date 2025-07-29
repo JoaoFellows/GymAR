@@ -63,7 +63,7 @@ export default function ARModel() {
         gltf.animations.forEach((clip) => {
           const action = mixer!.clipAction(clip);
           action.play(); // Inicia a animação imediatamente
-          action.paused = true; // Inicialmente pausada
+          //action.paused = true; // Inicialmente pausada
         });
       }
     });
