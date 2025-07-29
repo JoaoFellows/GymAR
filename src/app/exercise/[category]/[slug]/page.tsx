@@ -26,67 +26,105 @@ export default function ARModel() {
 
     let model: THREE.Group | null = null;
     let mixer: THREE.AnimationMixer | null = null;
+    let modelMinY = 0; // para ajuste da base
     const clock = new THREE.Clock();
 
     const loader = new GLTFLoader();
     loader.load("/models/Sumo_high_pull.glb", (gltf) => {
       model = gltf.scene;
-      model.visible = true;
-
-      model.position.set(0, 0, -3); // Coloca na frente do usuário
       scene.add(model);
+      model.visible = false;
 
+      // Ajustar escala para altura desejada
       const box = new THREE.Box3().setFromObject(model);
       const height = box.max.y - box.min.y;
-      const scale = 1.7 / height;
+      modelMinY = box.min.y;
+      const desiredHeight = 1.7;
+      const scale = desiredHeight / height;
       model.scale.setScalar(scale);
 
       if (gltf.animations.length > 0) {
         mixer = new THREE.AnimationMixer(model);
-        gltf.animations.forEach((clip) => {
-          mixer!.clipAction(clip).play();
-        });
+        gltf.animations.forEach((clip) => mixer!.clipAction(clip).play());
       }
     });
 
-    // Animação de renderização
-    renderer.setAnimationLoop(() => {
-      if (mixer) mixer.update(clock.getDelta());
+    let hitTestSource: XRHitTestSource | null = null;
+    let localSpace: XRReferenceSpace | null = null;
+    let modelPlaced = false;
+
+    renderer.xr.addEventListener("sessionstart", () => {
+      void (async () => {
+        const session = renderer.xr.getSession();
+        if (!session) return;
+
+        const viewerSpace = await session.requestReferenceSpace("viewer");
+
+        if (typeof session.requestHitTestSource === "function") {
+          hitTestSource = (await session.requestHitTestSource({ space: viewerSpace })) ?? null;
+        } else {
+          console.warn("requestHitTestSource is not supported in this session.");
+          hitTestSource = null;
+        }
+
+        localSpace = await session.requestReferenceSpace("local-floor");
+      })();
+    });
+
+    renderer.setAnimationLoop((timestamp, frame) => {
+      if (model && !modelPlaced && frame && hitTestSource && localSpace) {
+        const hitTestResults = frame.getHitTestResults(hitTestSource);
+        if (hitTestResults.length > 0) {
+          if(hitTestResults[0]) {
+            const hit = hitTestResults[0];
+            const pose = hit.getPose(localSpace);
+            if (pose) {
+              model.position.set(pose.transform.position.x, modelMinY, pose.transform.position.z);
+              model.quaternion.set(pose.transform.orientation.x, pose.transform.orientation.y, pose.transform.orientation.z, pose.transform.orientation.w);
+              model.visible = true;
+              modelPlaced = true; 
+            }
+          }
+         
+        }
+      }
+      const delta = clock.getDelta();
+      if (mixer) mixer.update(delta);
       renderer.render(scene, camera);
     });
 
-    // TOQUE: mover modelo apenas no plano X e Y
+    // TOQUE: mover modelo apenas em X e Z (não altera Y)
     let isTouching = false;
     let startX = 0;
     let startY = 0;
-
     const sensitivity = 0.005;
 
     const onTouchStart = (event: TouchEvent) => {
-      if (!model || event.touches.length !== 1) return;
+      if (!model || !modelPlaced || event.touches.length !== 1) return;
       isTouching = true;
-      if(event.touches[0]) {
+      if (event.touches[0]) {
         startX = event.touches[0].clientX;
         startY = event.touches[0].clientY;
       }
-      
     };
 
     const onTouchMove = (event: TouchEvent) => {
-      if (!model || !isTouching) return;
-      if(event.touches[0]) {
+      if (!model || !isTouching || event.touches.length !== 1) return;
+      if (event.touches[0]) {
         const deltaX = event.touches[0].clientX - startX;
         const deltaY = event.touches[0].clientY - startY;
 
         model.position.x += deltaX * sensitivity;
-        model.position.y -= deltaY * sensitivity; 
+        model.position.z += deltaY * sensitivity;
 
         startX = event.touches[0].clientX;
         startY = event.touches[0].clientY;
       }
     };
 
-    const onTouchEnd = () => (isTouching = false);
+    const onTouchEnd = () => {
+      isTouching = false;
+    };
 
     const dom = renderer.domElement;
     dom.addEventListener("touchstart", onTouchStart);
