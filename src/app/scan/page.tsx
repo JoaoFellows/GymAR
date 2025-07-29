@@ -52,20 +52,27 @@ export default function ScanPage() {
     return (
         <div style={{ width: "100vw", height: "100dvh", margin: 0, padding: 0, overflow: "hidden" }}>
             <h1 style={{ position: "absolute", top: 10, left: 0, width: "100%", textAlign: "center", color: "#fff", zIndex: 2 }}>
-            Escaneando QR Code...
+                Escaneando QR Code...
             </h1>
             <div
-            id="reader"
-            style={{
-                width: "100vw",
-                height: "100dvh",
-                position: "absolute",
-                top: 0,
-                left: 0,
-                zIndex: 1,
-                background: "#000"
-            }}
+                id="reader"
+                style={{
+                    width: "100vw",
+                    height: "100dvh",
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    zIndex: 1,
+                    background: "#000"
+                }}
             />
+             <style jsx global>{`
+                #reader video {
+                    object-fit: cover !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                }
+            `}</style>
         </div>
     );
 }
