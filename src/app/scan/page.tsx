@@ -1,27 +1,31 @@
-"use client"; // obrigatório se usar APIs do navegador como câmera
+"use client";
 
 import { useEffect } from "react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 
 export default function ScanPage() {
-    useEffect(() => {
-        const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
+  useEffect(() => {
+    const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
 
-        const startScanner = async () => {
-            await scanner.render(
-                (text: string) => {
-                console.log("QR Code:", text);
-                alert("QR Code: " + text);
-                scanner.clear(); // para parar após escanear
-                },
-                (err: string) => {
-                console.warn("Erro ao escanear:", err);
-                }
-            );
-        };
+    const startScanner = () => {
+      scanner.render(
+        (text: string) => {
+          console.log("QR Code:", text);
+          alert("QR Code: " + text);
 
-        startScanner();
-    }, []);
+          // scanner.clear() retorna uma Promise, então trate corretamente:
+          scanner.clear().catch((err) => {
+            console.error("Erro ao limpar scanner:", err);
+          });
+        },
+        (err: string) => {
+          console.warn("Erro ao escanear:", err);
+        }
+      );
+    };
+
+    startScanner();
+  }, []);
 
   return (
     <div>
