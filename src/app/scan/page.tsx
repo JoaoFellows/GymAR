@@ -13,23 +13,22 @@ export default function ScanPage() {
     const config = {
       fps: 10,
       qrbox: { width: 250, height: 250 },
-      // forçar a câmera traseira
-      facingMode: { exact: "environment" },
+      facingMode: "environment",
     };
 
     const startScanner = async () => {
       try {
         await scanner.start(
-          "environment",
+          config.facingMode,
           config,
           (text: string) => {
             console.log("QR Code:", text);
 
-            // Redireciona automaticamente para o link
             window.location.href = text;
 
-            // Parar o scanner
-            scanner.stop().catch((err) => console.error("Erro ao parar scanner:", err));
+            scanner.stop().catch((err) =>
+              console.error("Erro ao parar scanner:", err)
+            );
           },
           (err) => {
             console.warn("Erro ao escanear:", err);
@@ -40,19 +39,18 @@ export default function ScanPage() {
       }
     };
 
-    startScanner();
+    // Evita erro de no-floating-promises
+    void startScanner();
 
-    // Cleanup ao desmontar
     return () => {
-      // Ignorar promessa conforme recomendado pela regra no-floating-promises
-      void scanner.stop().catch(() => {
-        // Ignorar erro ao parar scanner
-      });
-      try {
-        scanner.clear();
-      } catch {
-        // Ignorar erro ao limpar scanner
-      }
+        void scanner.stop().catch(() => {
+            // Ignorar erro ao parar scanner
+        });
+        try {
+            scanner.clear();
+        } catch (err) {
+            console.error("Erro ao limpar scanner:", err);
+        }
     };
   }, []);
 
