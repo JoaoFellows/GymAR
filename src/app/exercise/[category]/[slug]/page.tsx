@@ -10,10 +10,6 @@ export default function Home() {
   const desiredHeight = 1.75;
   const [modelPlaced, setModelPlaced] = useState(false);
 
-  interface XRSessionWithHitTest extends XRSession {
-    requestHitTestSource(options: XRHitTestOptionsInit): Promise<XRHitTestSource>;
-  }
-
   useEffect(() => {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -21,17 +17,9 @@ export default function Home() {
     renderer.xr.setReferenceSpaceType("local-floor");
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      70,
-      window.innerWidth / window.innerHeight,
-      0.01,
-      20
-    );
-
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
     containerRef.current?.appendChild(renderer.domElement);
-    document.body.appendChild(
-      ARButton.createButton(renderer, { requiredFeatures: ["hit-test"] })
-    );
+    document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ["hit-test"] }));
 
     const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
     light.position.set(0.5, 1, 0.25);
@@ -50,9 +38,11 @@ export default function Home() {
       model.scale.setScalar(scale);
       model.visible = false;
 
+      // Animação
       mixer = new THREE.AnimationMixer(model);
       gltf.animations.forEach((clip) => {
-        mixer?.clipAction(clip).play();
+        const action = mixer!.clipAction(clip);
+        action.play();
       });
 
       scene.add(model);
@@ -60,39 +50,31 @@ export default function Home() {
 
     let hitTestSource: XRHitTestSource | null = null;
     let localSpace: XRReferenceSpace | null = null;
-    let hitTestRequested = false;
 
-    renderer.setAnimationLoop((timestamp, frame) => {
-      if (frame && !hitTestRequested) {
-        const session = renderer.xr.getSession();
-        if (
-          session &&
-          typeof (session as XRSessionWithHitTest).requestHitTestSource === "function"
-        ) {
-          session
-            .requestReferenceSpace("viewer")
-            .then((refSpace) => {
-              return (session as XRSessionWithHitTest)
-                .requestHitTestSource({ space: refSpace })
-                .then((source: XRHitTestSource) => {
-                  hitTestSource = source;
-                  localSpace = renderer.xr.getReferenceSpace();
-                  hitTestRequested = true;
+  renderer.xr.addEventListener("sessionstart", () => {
+    void (async () => {
+      const session = renderer.xr.getSession();
+      if (!session) return;
 
-                  session.addEventListener("end", () => {
-                    hitTestSource = null;
-                    hitTestRequested = false;
-                    setModelPlaced(false);
-                  });
-                });
-            })
-            .catch((err) => console.error("Erro ao requisitar hit test:", err));
-        }
+      const viewerSpace = await session.requestReferenceSpace("viewer");
+
+      if (typeof session.requestHitTestSource === "function") {
+        hitTestSource = (await session.requestHitTestSource({ space: viewerSpace })) ?? null;
+      } else {
+        console.warn("requestHitTestSource is not supported in this session.");
+        hitTestSource = null;
       }
 
-      if (frame && hitTestSource && localSpace && model && !modelPlaced) {
+      localSpace = await session.requestReferenceSpace("local-floor");
+    })();
+});
+
+    const clock = new THREE.Clock();
+
+    renderer.setAnimationLoop((timestamp, frame) => {
+      if (model && !modelPlaced && frame && hitTestSource && localSpace) {
         const hitTestResults = frame.getHitTestResults(hitTestSource);
-        if (hitTestResults.length > 0 && hitTestResults[0]) {
+        if (hitTestResults[0]) {
           const hit = hitTestResults[0];
           const pose = hit.getPose(localSpace);
           if (pose) {
@@ -102,21 +84,21 @@ export default function Home() {
               pose.transform.position.y,
               pose.transform.position.z
             );
-            model.rotation.set(0, Math.PI, 0);
             setModelPlaced(true);
           }
         }
       }
 
-      if (mixer) mixer.update(0.01);
+      const delta = clock.getDelta();
+      if (mixer) mixer.update(delta);
+
       renderer.render(scene, camera);
     });
 
-    // TOUCH CONTROLS - apenas movimentação x/y
+    // TOUCH CONTROLS
     let isTouching = false;
     let previousX = 0;
     let previousY = 0;
-
     const domElement = renderer.domElement;
 
     const onTouchStart = (event: TouchEvent) => {
