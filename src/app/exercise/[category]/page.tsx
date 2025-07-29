@@ -60,8 +60,8 @@ const exercises = [
     },
     {
         id: 8,
-        title: "Stiff",
-        slug: "stiff",
+        title: "Agachamento unilateral",
+        slug: "pistol-squat",
         description: "Foca nos posteriores de coxa e glúteos.",
         category: "lower-body",
     },
