@@ -22,7 +22,7 @@ export default function ScanPage() {
         // Tenta achar câmera traseira
         const backCamera = devices.find(device =>
           device.label.toLowerCase().includes("back")
-        ) || devices[0]; // Fallback: primeira câmera
+        ) ?? devices[0]; // Fallback: primeira câmera
 
         if (!backCamera) {
           console.error("Nenhuma câmera traseira encontrada.");
@@ -55,7 +55,9 @@ export default function ScanPage() {
     void startScanner();
 
     return () => {
-      void scanner.stop().catch(() => {});
+      void scanner.stop().catch((err) =>
+        console.warn("Erro ao parar scanner na desmontagem:", err)
+      );
       try {
         scanner.clear();
       } catch (err) {
