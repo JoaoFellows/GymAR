@@ -9,7 +9,6 @@ export default function HomePage() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    setIsOpen(true);
     const userHeight = localStorage.getItem('userHeight');
     if (!userHeight) {
       setIsOpen(true);
