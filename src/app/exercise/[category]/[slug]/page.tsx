@@ -7,8 +7,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 export default function ARModel() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [showPlayButton, setShowPlayButton] = useState(false);
-  const [animationStarted, setAnimationStarted] = useState(false);
+  // Removido o botão, não precisa de estados extras
 
   useEffect(() => {
     const scene = new THREE.Scene();
@@ -30,6 +29,7 @@ export default function ARModel() {
 
     let model: THREE.Group | null = null;
     let mixer: THREE.AnimationMixer | null = null;
+    let actions: THREE.AnimationAction[] = [];
     let hitTestSource: XRHitTestSource | null = null;
     let hitTestSourceRequested = false;
     let modelPlaced = false;
@@ -62,14 +62,15 @@ export default function ARModel() {
         mixer = new THREE.AnimationMixer(model);
         gltf.animations.forEach((clip) => {
           const action = mixer!.clipAction(clip);
-          action.play(); // Inicia a animação imediatamente
-          action.paused = false; // Inicialmente pausada
+          action.play();
+          action.paused = true; // começa pausado
+          actions.push(action);
         });
       }
     });
 
     renderer.setAnimationLoop((timestamp, frame) => {
-      if (mixer && animationStarted) {
+      if (mixer && modelPlaced) {
         mixer.update(clock.getDelta());
       }
 
@@ -77,16 +78,23 @@ export default function ARModel() {
         const referenceSpace = renderer.xr.getReferenceSpace();
         const session = renderer.xr.getSession();
 
-        if (!hitTestSourceRequested) {
-          void session?.requestReferenceSpace("viewer").then((viewerSpace) => {
-            void session?.requestHitTestSource?.({ space: viewerSpace })?.then((source) => {
-              hitTestSource = source ?? null;
-            });
-          });
+    (async () => {
+      try {
+        const session = renderer.xr.getSession();
+        if (session && typeof session.requestReferenceSpace === "function" && typeof session.requestHitTestSource === "function") {
+          const viewerSpace = await session.requestReferenceSpace("viewer");
+          const source = await session.requestHitTestSource({ space: viewerSpace });
+          hitTestSource = source ?? null;
           hitTestSourceRequested = true;
         }
+      } catch (e) {
+        console.error("Failed to request hit test source:", e);
+      }
+    })();
 
-        if (hitTestSource) {
+
+
+        if (hitTestSource && !modelPlaced) {
           const hitTestResults = frame.getHitTestResults(hitTestSource);
           if (hitTestResults.length > 0) {
             const hit = hitTestResults[0];
@@ -97,6 +105,8 @@ export default function ARModel() {
                 reticle.matrix.fromArray(pose.transform.matrix);
               }
             }
+          } else {
+            reticle.visible = false;
           }
         }
       }
@@ -120,7 +130,12 @@ export default function ARModel() {
           model.visible = true;
           modelPlaced = true;
           reticle.visible = false;
-          setShowPlayButton(true);
+
+          // Inicia as animações despausando todas
+          actions.forEach((action) => {
+            action.paused = false;
+            action.reset?.();
+          });
         }
       }
     };
@@ -135,7 +150,9 @@ export default function ARModel() {
       }
     };
 
-    const onTouchEnd = () => (isTouching = false);
+    const onTouchEnd = () => {
+      isTouching = false;
+    };
 
     const dom = renderer.domElement;
     dom.addEventListener("touchstart", onTouchStart);
@@ -149,30 +166,7 @@ export default function ARModel() {
       dom.removeEventListener("touchend", onTouchEnd);
       dom.removeEventListener("touchcancel", onTouchEnd);
     };
-  }, [animationStarted]);
+  }, []);
 
-  return (
-    <div ref={containerRef} style={{ width: "100vw", height: "100vh", position: "relative" }}>
-      {showPlayButton && (
-        <button
-          style={{
-            position: "absolute",
-            bottom: "20px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            padding: "12px 24px",
-            fontSize: "18px",
-            borderRadius: "8px",
-            backgroundColor: "black",
-            color: "white",
-            border: "none",
-            cursor: "pointer",
-          }}
-          onClick={() => setAnimationStarted(true)}
-        >
-          ▶️ Iniciar Animação
-        </button>
-      )}
-    </div>
-  );
+  return <div ref={containerRef} style={{ width: "100vw", height: "100vh", position: "relative" }} />;
 }
