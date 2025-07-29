@@ -10,8 +10,7 @@ export default function ARModel() {
 
   useEffect(() => {
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-    const clock = new THREE.Clock();
+    const camera = new THREE.PerspectiveCamera();
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -25,122 +24,133 @@ export default function ARModel() {
     light.position.set(0.5, 1, 0.25);
     scene.add(light);
 
-    // Modelo
     let model: THREE.Group | null = null;
     let mixer: THREE.AnimationMixer | null = null;
+    let hitTestSource: XRHitTestSource | null = null;
+    let hitTestSourceRequested = false;
     let modelPlaced = false;
-    let modelMinY = 0;
+    const clock = new THREE.Clock();
+
+    // Criar um marcador visual para onde o modelo será colocado
+    const reticle = new THREE.Mesh(
+      new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial()
+    );
+    reticle.matrixAutoUpdate = false;
+    reticle.visible = false;
+    scene.add(reticle);
 
     const loader = new GLTFLoader();
-    loader.load(
-      "/models/Sumo_high_pull.glb",
-      (gltf) => {
-        console.log("Modelo carregado");
+    loader.load("/models/Sumo_high_pull.glb", (gltf) => {
+      model = gltf.scene;
+      model.visible = false; // Inicialmente invisível até ser posicionado
 
-        model = gltf.scene;
-        scene.add(model);
+      const box = new THREE.Box3().setFromObject(model);
+      const height = box.max.y - box.min.y;
+      const scale = 1.7 / height;
+      model.scale.setScalar(scale);
 
-        // Ajuste de escala
-        const box = new THREE.Box3().setFromObject(model);
-        const height = box.max.y - box.min.y;
-        modelMinY = box.min.y;
-        const desiredHeight = 1.7;
-        const scale = desiredHeight / height;
-        model.scale.setScalar(scale);
+      // Ajustar a posição Y para que a base do modelo toque o chão
+      const minY = box.min.y * scale;
+      model.position.y = -minY;
 
-        // Animação
-        if (gltf.animations.length > 0) {
-          mixer = new THREE.AnimationMixer(model);
-          gltf.animations.forEach((clip) => mixer!.clipAction(clip).play());
+      scene.add(model);
+
+      if (gltf.animations.length > 0) {
+        mixer = new THREE.AnimationMixer(model);
+        gltf.animations.forEach((clip) => {
+          mixer!.clipAction(clip).play();
+        });
+      }
+    });
+
+    // Animação de renderização com hit-test
+    renderer.setAnimationLoop((timestamp, frame) => {
+      if (mixer) mixer.update(clock.getDelta());
+
+      if (frame) {
+        const referenceSpace = renderer.xr.getReferenceSpace();
+        const session = renderer.xr.getSession();
+
+        if (hitTestSourceRequested === false) {
+          void session?.requestReferenceSpace('viewer').then((referenceSpace) => {
+            void session?.requestHitTestSource?.({ space: referenceSpace })?.then((source) => {
+              hitTestSource = source;
+            });
+          });
+          hitTestSourceRequested = true;
         }
 
-        // Fallback: posiciona à frente da câmera
-        model.position.set(0, 0, -1);
-        model.visible = true;
-      },
-      undefined,
-      (error) => {
-        console.error("Erro ao carregar o modelo:", error);
-      }
-    );
+        if (hitTestSource) {
+          const hitTestResults = frame.getHitTestResults(hitTestSource);
 
-    // Detecção de plano
-    let hitTestSource: XRHitTestSource | null = null;
-    let localSpace: XRReferenceSpace | null = null;
+          if (hitTestResults.length > 0) {
+            const hit = hitTestResults[0];
+            if (hit) {
+              const pose = hit.getPose(referenceSpace!);
 
-    renderer.xr.addEventListener("sessionstart", () => {
-  void (async () => {
-    const session = renderer.xr.getSession();
-    if (!session) return;
+              if (pose) {
+                reticle.visible = true;
+                reticle.matrix.fromArray(pose.transform.matrix);
 
-    const viewerSpace = await session.requestReferenceSpace("viewer");
-    const hitTestSourceMaybe = await session.requestHitTestSource?.({ space: viewerSpace });
-    hitTestSource = hitTestSourceMaybe ?? null;
-
-    if (!hitTestSource) {
-      console.warn("Hit test source não disponível.");
-    }
-
-    localSpace = await session.requestReferenceSpace("local-floor");
-  })();
-});
-
-
-
-    renderer.setAnimationLoop((timestamp, frame) => {
-      if (model && frame && !modelPlaced && hitTestSource && localSpace) {
-        const hitTestResults = frame.getHitTestResults(hitTestSource);
-        if (hitTestResults[0]) {
-          const hit = hitTestResults[0];
-          const pose = hit.getPose(localSpace);
-          if (pose) {
-            model.position.set(pose.transform.position.x, modelMinY, pose.transform.position.z);
-            model.quaternion.set(
-              pose.transform.orientation.x,
-              pose.transform.orientation.y,
-              pose.transform.orientation.z,
-              pose.transform.orientation.w
-            );
-            modelPlaced = true;
+                // Se o modelo não foi posicionado ainda e o usuário tocar
+                if (!modelPlaced && model) {
+                  // Aqui vamos aguardar o toque para posicionar o modelo
+                }
+              }
+            }
           }
         }
       }
 
-      if (mixer) mixer.update(clock.getDelta());
       renderer.render(scene, camera);
     });
 
-    // TOQUE: mover em X e Z
+    // TOQUE: posicionar modelo no chão e mover apenas lateralmente
     let isTouching = false;
     let startX = 0;
     let startY = 0;
+
     const sensitivity = 0.005;
 
     const onTouchStart = (event: TouchEvent) => {
-      if (!model || !model.visible || event.touches.length !== 1) return;
+      event.preventDefault();
+      if (event.touches.length !== 1) return;
+      
       isTouching = true;
-      if(event.touches[0]) {
+      if (event.touches[0]) {
         startX = event.touches[0].clientX;
         startY = event.touches[0].clientY;
+
+        // Se o modelo ainda não foi posicionado, posiciona no hit-test
+        if (!modelPlaced && model && reticle.visible) {
+          model.position.copy(reticle.position);
+          model.visible = true;
+          modelPlaced = true;
+          reticle.visible = false; // Esconde o reticle após posicionar
+        }
       }
-      
     };
 
     const onTouchMove = (event: TouchEvent) => {
-      if (!isTouching || !model || event.touches.length !== 1) return;
-      if(event.touches[0]) {
+      event.preventDefault();
+      if (!model || !isTouching || !modelPlaced) return;
+      
+      if (event.touches[0]) {
         const deltaX = event.touches[0].clientX - startX;
-        const deltaY = event.touches[0].clientY - startY;
+        const deltaZ = event.touches[0].clientY - startY; // Usar Z em vez de Y para movimento frente/trás
+
+        // Move apenas no plano horizontal (X e Z), mantendo Y fixo no chão
         model.position.x += deltaX * sensitivity;
-        model.position.z += deltaY * sensitivity;
+        model.position.z += deltaZ * sensitivity;
+        // model.position.y permanece fixo na altura detectada pelo hit-test
+
         startX = event.touches[0].clientX;
         startY = event.touches[0].clientY;
-      } 
+      }
     };
 
-    const onTouchEnd = () => {
-      isTouching = false;
-    };
+    const onTouchEnd = () => (isTouching = false);
 
     const dom = renderer.domElement;
     dom.addEventListener("touchstart", onTouchStart);
