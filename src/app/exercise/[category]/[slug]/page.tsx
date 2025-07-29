@@ -33,8 +33,7 @@ export default function ARModel() {
       model = gltf.scene;
       model.visible = true;
 
-
-      model.position.set(0, 0, -1); // Coloca na frente do usuário
+      model.position.set(0, 0, -3); // Coloca na frente do usuário
       scene.add(model);
 
       const box = new THREE.Box3().setFromObject(model);
