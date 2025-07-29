@@ -62,8 +62,8 @@ export default function ARModel() {
         mixer = new THREE.AnimationMixer(model);
         gltf.animations.forEach((clip) => {
           const action = mixer!.clipAction(clip);
-          action.play();
-          action.paused = true; // Começa pausado
+          action.play(); // Inicia a animação imediatamente
+          action.paused = true; // Inicialmente pausada
         });
       }
     });
@@ -80,7 +80,7 @@ export default function ARModel() {
         if (!hitTestSourceRequested) {
           void session?.requestReferenceSpace("viewer").then((viewerSpace) => {
             void session?.requestHitTestSource?.({ space: viewerSpace })?.then((source) => {
-              hitTestSource = source;
+              hitTestSource = source ?? null;
             });
           });
           hitTestSourceRequested = true;
@@ -106,8 +106,7 @@ export default function ARModel() {
 
     let isTouching = false;
     let startX = 0;
-    let startY = 0;
-    const sensitivity = 0.005;
+    const rotateSensitivity = 0.005;
 
     const onTouchStart = (event: TouchEvent) => {
       event.preventDefault();
@@ -115,7 +114,6 @@ export default function ARModel() {
       if (event.touches[0]) {
         isTouching = true;
         startX = event.touches[0].clientX;
-        startY = event.touches[0].clientY;
 
         if (!modelPlaced && model && reticle.visible) {
           model.position.setFromMatrixPosition(reticle.matrix);
@@ -132,13 +130,8 @@ export default function ARModel() {
       if (!model || !isTouching || !modelPlaced) return;
       if (event.touches[0]) {
         const deltaX = event.touches[0].clientX - startX;
-        const deltaZ = event.touches[0].clientY - startY;
-
-        model.position.x += deltaX * sensitivity;
-        model.position.z += deltaZ * sensitivity;
-
+        model.rotation.y += deltaX * rotateSensitivity;
         startX = event.touches[0].clientX;
-        startY = event.touches[0].clientY;
       }
     };
 
@@ -170,7 +163,7 @@ export default function ARModel() {
             padding: "12px 24px",
             fontSize: "18px",
             borderRadius: "8px",
-            backgroundColor: "#4CAF50",
+            backgroundColor: "black",
             color: "white",
             border: "none",
             cursor: "pointer",
