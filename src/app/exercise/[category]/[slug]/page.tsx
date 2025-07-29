@@ -92,7 +92,7 @@ export default function ARModel() {
             if (hit) {
               const pose = hit.getPose(referenceSpace!);
               if (pose) {
-                reticle.visible = true;
+                reticle.visible = !modelPlaced;
                 reticle.matrix.fromArray(pose.transform.matrix);
               }
             }
