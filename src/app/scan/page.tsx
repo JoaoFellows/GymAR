@@ -44,10 +44,15 @@ export default function ScanPage() {
 
     // Cleanup ao desmontar
     return () => {
-      scanner.stop().catch(() => {});
+      // Ignorar promessa conforme recomendado pela regra no-floating-promises
+      void scanner.stop().catch(() => {
+        // Ignorar erro ao parar scanner
+      });
       try {
         scanner.clear();
-      } catch {}
+      } catch {
+        // Ignorar erro ao limpar scanner
+      }
     };
   }, []);
 
