@@ -48,7 +48,7 @@ export default function ARModel() {
 
       const box = new THREE.Box3().setFromObject(model);
       const height = box.max.y - box.min.y;
-      const scale = 1.7 / height;
+      const scale = 1.7 / height; // Altura real desejada em metros (1.70m)
       model.scale.setScalar(scale);
 
       const minY = box.min.y * scale;
