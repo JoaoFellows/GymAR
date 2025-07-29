@@ -18,3 +18,17 @@ model Post {
 
     @@index([name])
 }
+
+model Exercise {
+    id          Int      @id @default(autoincrement())
+    name        String
+    slug        String   @unique
+    description String?
+    categoria   String?
+    modelo3D    String?
+    videoAR     String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([name])
+}

@@ -1,0 +1,194 @@
+### Arquivo de teste para APIs de Exercise
+### Use a extensão REST Client do VS Code para executar estes testes
+### Clique em "Send Request" acima de cada requisição
+
+@baseUrl = http://localhost:3000/api/exercises
+
+### 1. 📋 Listar todos os exercícios
+GET {{baseUrl}}
+
+###
+
+### 2. ➕ Criar um novo exercício
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "name": "Flexão de Braço",
+  "slug": "flexao-braco", 
+  "description": "Exercício para fortalecer peitorais, tríceps e deltoides",
+  "categoria": "upper-body",
+  "modelo3D": "https://example.com/modelo3d/flexao.obj",
+  "videoAR": "https://example.com/ar/flexao.mp4"
+}
+
+###
+
+### 3. ➕ Criar outro exercício
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "name": "Agachamento",
+  "slug": "agachamento",
+  "description": "Exercício para fortalecer pernas e glúteos",
+  "modelo3D": "https://example.com/modelo3d/agachamento.obj",
+  "videoAR": "https://example.com/ar/agachamento.mp4"
+}
+
+###
+
+### 4. 🔍 Buscar exercício por ID (substitua {id} pelo ID real)
+GET {{baseUrl}}/2
+
+###
+
+### 5. 🔍 Buscar exercício por slug
+GET {{baseUrl}}/slug/agachamento
+
+###
+
+### 6. 🔍 Buscar exercícios por nome (search)
+GET {{baseUrl}}?search=Aga
+
+###
+
+### 7. ✏️ Atualizar exercício (substitua {id} pelo ID real)
+PUT {{baseUrl}}/4
+Content-Type: application/json
+
+{
+  "name": "Flexão de Braço - Nível Avançado 2",
+  "slug": "flexao-braco-avancado",
+  "description": "Exercício avançado para fortalecer peitorais, tríceps e deltoides com maior intensidade",
+  "modelo3D": "https://example.com/modelo3d/flexao-avancado.obj"
+}
+
+###
+
+### 8. ✏️ Atualizar parcialmente um exercício (apenas alguns campos)
+PUT {{baseUrl}}/2
+Content-Type: application/json
+
+{
+  "description": "Exercício fundamental para desenvolvimento de força nas pernas."
+}
+
+###
+
+### 9. 🗑️ Deletar exercício (substitua {id} pelo ID real)
+DELETE {{baseUrl}}/9
+
+###
+
+### 10. 📋 Verificar lista final após deleção
+GET {{baseUrl}}
+
+###
+
+### 🧪 TESTES DE VALIDAÇÃO E ERROS
+
+### ❌ Teste: Criar exercício sem campos obrigatórios
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "description": "Exercício sem nome e slug"
+}
+
+###
+
+### ❌ Teste: Buscar exercício com ID inválido
+GET {{baseUrl}}/abc
+
+###
+
+### ❌ Teste: Buscar exercício que não existe
+GET {{baseUrl}}/9999
+
+###
+
+### ❌ Teste: Buscar por slug que não existe
+GET {{baseUrl}}/slug/exercicio-inexistente
+
+###
+
+### ❌ Teste: Atualizar exercício que não existe
+PUT {{baseUrl}}/9999
+Content-Type: application/json
+
+{
+  "name": "Exercício que não existe"
+}
+
+###
+
+### ❌ Teste: Deletar exercício que não existe
+DELETE {{baseUrl}}/9999
+
+###
+
+### 🎯 EXEMPLO DE DADOS ADICIONAIS PARA TESTE
+
+### ➕ Exercício de cardio
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "name": "Corrida Estacionária",
+  "slug": "corrida-estacionaria",
+  "description": "Exercício cardiovascular para aquecimento",
+  "videoAR": "https://example.com/ar/corrida.mp4"
+}
+
+###
+
+### ➕ Exercício de core
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "name": "Prancha",
+  "slug": "prancha",
+  "description": "Exercício isométrico para fortalecimento do core",
+  "modelo3D": "https://example.com/modelo3d/prancha.obj",
+  "videoAR": "https://example.com/ar/prancha.mp4"
+}
+
+###
+
+### ➕ Exercício de braço
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "name": "Rosca Bíceps",
+  "slug": "rosca-biceps",
+  "description": "Exercício para desenvolvimento dos músculos bíceps",
+  "modelo3D": "https://example.com/modelo3d/rosca.obj"
+}
+
+###
+
+### 🧹 GERENCIAMENTO DE QR CODES
+
+### 🗑️ Limpar QR codes órfãos (sem exercício correspondente)
+DELETE {{baseUrl}}/qrcodes/cleanup
+
+###
+
+### 🔍 Verificar se QR code foi gerado (substitua {slug} pelo slug real)
+### Abra no navegador: http://localhost:3000/qrcodes/flexao-braco.png
+
+###
+
+### 📝 TESTE COMPLETO DE QR CODES:
+### 1. Crie um exercício (POST)
+### 2. Verifique se o QR code foi gerado em public/qrcodes/
+### 3. Atualize o slug do exercício (PUT)
+### 4. Verifique se o QR code antigo foi deletado e o novo criado
+### 5. Delete o exercício (DELETE)
+### 6. Verifique se o QR code foi removido
+### 7. Execute cleanup para remover órfãos
+
+###
