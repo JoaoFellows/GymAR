@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { ARButton } from "three/examples/jsm/webxr/ARButton";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 export default function ARModel() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [showPlayButton, setShowPlayButton] = useState(false);
+  const [animationStarted, setAnimationStarted] = useState(false);
 
   useEffect(() => {
     const scene = new THREE.Scene();
@@ -18,7 +20,9 @@ export default function ARModel() {
     renderer.xr.setReferenceSpaceType("local-floor");
     containerRef.current?.appendChild(renderer.domElement);
 
-    document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ["hit-test"] }));
+    document.body.appendChild(
+      ARButton.createButton(renderer, { requiredFeatures: ["hit-test"] })
+    );
 
     const light = new THREE.HemisphereLight(0xffffff, 0x444444);
     light.position.set(0.5, 1, 0.25);
@@ -31,10 +35,9 @@ export default function ARModel() {
     let modelPlaced = false;
     const clock = new THREE.Clock();
 
-    // Criar um marcador visual para onde o modelo será colocado
     const reticle = new THREE.Mesh(
       new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial()
+      new THREE.MeshBasicMaterial({ color: 0x00ff00 })
     );
     reticle.matrixAutoUpdate = false;
     reticle.visible = false;
@@ -43,14 +46,13 @@ export default function ARModel() {
     const loader = new GLTFLoader();
     loader.load("/models/Sumo_high_pull.glb", (gltf) => {
       model = gltf.scene;
-      model.visible = false; // Inicialmente invisível até ser posicionado
+      model.visible = false;
 
       const box = new THREE.Box3().setFromObject(model);
       const height = box.max.y - box.min.y;
       const scale = 1.7 / height;
       model.scale.setScalar(scale);
 
-      // Ajustar a posição Y para que a base do modelo toque o chão
       const minY = box.min.y * scale;
       model.position.y = -minY;
 
@@ -59,22 +61,25 @@ export default function ARModel() {
       if (gltf.animations.length > 0) {
         mixer = new THREE.AnimationMixer(model);
         gltf.animations.forEach((clip) => {
-          mixer!.clipAction(clip).play();
+          const action = mixer!.clipAction(clip);
+          action.play();
+          action.paused = true; // Começa pausado
         });
       }
     });
 
-    // Animação de renderização com hit-test
     renderer.setAnimationLoop((timestamp, frame) => {
-      if (mixer) mixer.update(clock.getDelta());
+      if (mixer && animationStarted) {
+        mixer.update(clock.getDelta());
+      }
 
       if (frame) {
         const referenceSpace = renderer.xr.getReferenceSpace();
         const session = renderer.xr.getSession();
 
-        if (hitTestSourceRequested === false) {
-          void session?.requestReferenceSpace('viewer').then((referenceSpace) => {
-            void session?.requestHitTestSource?.({ space: referenceSpace })?.then((source) => {
+        if (!hitTestSourceRequested) {
+          void session?.requestReferenceSpace("viewer").then((viewerSpace) => {
+            void session?.requestHitTestSource?.({ space: viewerSpace })?.then((source) => {
               hitTestSource = source;
             });
           });
@@ -83,20 +88,13 @@ export default function ARModel() {
 
         if (hitTestSource) {
           const hitTestResults = frame.getHitTestResults(hitTestSource);
-
           if (hitTestResults.length > 0) {
             const hit = hitTestResults[0];
             if (hit) {
               const pose = hit.getPose(referenceSpace!);
-
               if (pose) {
                 reticle.visible = true;
                 reticle.matrix.fromArray(pose.transform.matrix);
-
-                // Se o modelo não foi posicionado ainda e o usuário tocar
-                if (!modelPlaced && model) {
-                  // Aqui vamos aguardar o toque para posicionar o modelo
-                }
               }
             }
           }
@@ -106,28 +104,25 @@ export default function ARModel() {
       renderer.render(scene, camera);
     });
 
-    // TOQUE: posicionar modelo no chão e mover apenas lateralmente
     let isTouching = false;
     let startX = 0;
     let startY = 0;
-
     const sensitivity = 0.005;
 
     const onTouchStart = (event: TouchEvent) => {
       event.preventDefault();
       if (event.touches.length !== 1) return;
-      
-      isTouching = true;
       if (event.touches[0]) {
+        isTouching = true;
         startX = event.touches[0].clientX;
         startY = event.touches[0].clientY;
 
-        // Se o modelo ainda não foi posicionado, posiciona no hit-test
         if (!modelPlaced && model && reticle.visible) {
-          model.position.copy(reticle.position);
+          model.position.setFromMatrixPosition(reticle.matrix);
           model.visible = true;
           modelPlaced = true;
-          reticle.visible = false; // Esconde o reticle após posicionar
+          reticle.visible = false;
+          setShowPlayButton(true);
         }
       }
     };
@@ -135,15 +130,12 @@ export default function ARModel() {
     const onTouchMove = (event: TouchEvent) => {
       event.preventDefault();
       if (!model || !isTouching || !modelPlaced) return;
-      
       if (event.touches[0]) {
         const deltaX = event.touches[0].clientX - startX;
-        const deltaZ = event.touches[0].clientY - startY; // Usar Z em vez de Y para movimento frente/trás
+        const deltaZ = event.touches[0].clientY - startY;
 
-        // Move apenas no plano horizontal (X e Z), mantendo Y fixo no chão
         model.position.x += deltaX * sensitivity;
         model.position.z += deltaZ * sensitivity;
-        // model.position.y permanece fixo na altura detectada pelo hit-test
 
         startX = event.touches[0].clientX;
         startY = event.touches[0].clientY;
@@ -164,7 +156,30 @@ export default function ARModel() {
       dom.removeEventListener("touchend", onTouchEnd);
       dom.removeEventListener("touchcancel", onTouchEnd);
     };
-  }, []);
+  }, [animationStarted]);
 
-  return <div ref={containerRef} style={{ width: "100vw", height: "100vh" }} />;
+  return (
+    <div ref={containerRef} style={{ width: "100vw", height: "100vh", position: "relative" }}>
+      {showPlayButton && (
+        <button
+          style={{
+            position: "absolute",
+            bottom: "20px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            padding: "12px 24px",
+            fontSize: "18px",
+            borderRadius: "8px",
+            backgroundColor: "#4CAF50",
+            color: "white",
+            border: "none",
+            cursor: "pointer",
+          }}
+          onClick={() => setAnimationStarted(true)}
+        >
+          ▶️ Iniciar Animação
+        </button>
+      )}
+    </div>
+  );
 }
