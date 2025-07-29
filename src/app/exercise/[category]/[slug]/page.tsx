@@ -10,6 +10,10 @@ export default function Home() {
   const desiredHeight = 1.75;
   const [modelPlaced, setModelPlaced] = useState(false);
 
+  interface XRSessionWithHitTest extends XRSession {
+    requestHitTestSource(options: XRHitTestOptionsInit): Promise<XRHitTestSource>;
+  }
+
   useEffect(() => {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -17,9 +21,17 @@ export default function Home() {
     renderer.xr.setReferenceSpaceType("local-floor");
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+    const camera = new THREE.PerspectiveCamera(
+      70,
+      window.innerWidth / window.innerHeight,
+      0.01,
+      20
+    );
+
     containerRef.current?.appendChild(renderer.domElement);
-    document.body.appendChild(ARButton.createButton(renderer));
+    document.body.appendChild(
+      ARButton.createButton(renderer, { requiredFeatures: ["hit-test"] })
+    );
 
     const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
     light.position.set(0.5, 1, 0.25);
@@ -48,32 +60,39 @@ export default function Home() {
 
     let hitTestSource: XRHitTestSource | null = null;
     let localSpace: XRReferenceSpace | null = null;
-
-    const controller = renderer.xr.getController(0);
-    scene.add(controller);
-
-    renderer.xr.addEventListener("sessionstart", () => {
-      void (async () => {
-        const session = renderer.xr.getSession();
-        if (!session) return;
-
-        const viewerSpace = await session.requestReferenceSpace("viewer");
-
-        if (typeof session.requestHitTestSource === "function") {
-          hitTestSource = (await session.requestHitTestSource({ space: viewerSpace })) ?? null;
-        } else {
-          console.warn("requestHitTestSource is not supported in this session.");
-          hitTestSource = null;
-        }
-
-        localSpace = await session.requestReferenceSpace("local-floor");
-      })();
-    });
+    let hitTestRequested = false;
 
     renderer.setAnimationLoop((timestamp, frame) => {
-      if (model && !modelPlaced && frame && hitTestSource && localSpace) {
+      if (frame && !hitTestRequested) {
+        const session = renderer.xr.getSession();
+        if (
+          session &&
+          typeof (session as XRSessionWithHitTest).requestHitTestSource === "function"
+        ) {
+          session
+            .requestReferenceSpace("viewer")
+            .then((refSpace) => {
+              return (session as XRSessionWithHitTest)
+                .requestHitTestSource({ space: refSpace })
+                .then((source: XRHitTestSource) => {
+                  hitTestSource = source;
+                  localSpace = renderer.xr.getReferenceSpace();
+                  hitTestRequested = true;
+
+                  session.addEventListener("end", () => {
+                    hitTestSource = null;
+                    hitTestRequested = false;
+                    setModelPlaced(false);
+                  });
+                });
+            })
+            .catch((err) => console.error("Erro ao requisitar hit test:", err));
+        }
+      }
+
+      if (frame && hitTestSource && localSpace && model && !modelPlaced) {
         const hitTestResults = frame.getHitTestResults(hitTestSource);
-        if (hitTestResults[0]) {
+        if (hitTestResults.length > 0 && hitTestResults[0]) {
           const hit = hitTestResults[0];
           const pose = hit.getPose(localSpace);
           if (pose) {
@@ -83,6 +102,7 @@ export default function Home() {
               pose.transform.position.y,
               pose.transform.position.z
             );
+            model.rotation.set(0, Math.PI, 0);
             setModelPlaced(true);
           }
         }
@@ -102,16 +122,15 @@ export default function Home() {
     const onTouchStart = (event: TouchEvent) => {
       if (!modelPlaced || event.touches.length !== 1) return;
       isTouching = true;
-      if(event.touches[0]) {
+      if (event.touches[0]) {
         previousX = event.touches[0].clientX;
         previousY = event.touches[0].clientY;
       }
-     
     };
 
     const onTouchMove = (event: TouchEvent) => {
       if (!model || !isTouching || event.touches.length !== 1) return;
-      if(event.touches[0]) {
+      if (event.touches[0]) {
         const deltaX = event.touches[0].clientX - previousX;
         const deltaY = event.touches[0].clientY - previousY;
 
