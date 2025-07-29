@@ -42,7 +42,7 @@ export default function ARModel() {
     scene.add(reticle);
 
     const loader = new GLTFLoader();
-    loader.load("/models/Sumo_high_pull.glb", (gltf) => {
+    loader.load("/models/curl.glb", (gltf) => {
       model = gltf.scene;
       model.visible = false;
 
