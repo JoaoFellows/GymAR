@@ -29,15 +29,14 @@ export default function ARModel() {
     const clock = new THREE.Clock();
 
     const loader = new GLTFLoader();
-    loader.load("/models/animated_model.glb", (gltf) => {
+    loader.load("/models/Sumo_high_pull.glb", (gltf) => {
       model = gltf.scene;
       model.visible = true;
 
-      // Ajuste inicial
+
       model.position.set(0, 0, -1); // Coloca na frente do usuário
       scene.add(model);
 
-      // Escalar para altura ideal
       const box = new THREE.Box3().setFromObject(model);
       const height = box.max.y - box.min.y;
       const scale = 1.7 / height;
@@ -81,7 +80,7 @@ export default function ARModel() {
         const deltaY = event.touches[0].clientY - startY;
 
         model.position.x += deltaX * sensitivity;
-        model.position.y -= deltaY * sensitivity; // y invertido (tela vs cena 3D)
+        model.position.y -= deltaY * sensitivity; 
 
         startX = event.touches[0].clientX;
         startY = event.touches[0].clientY;
