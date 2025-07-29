@@ -130,9 +130,13 @@ export default function ARModel() {
         model.rotation.y += deltaX * rotateSensitivity;
         startX = event.touches[0].clientX;
       }
+      reticle.visible = false;
     };
 
-    const onTouchEnd = () => (isTouching = false);
+    const onTouchEnd = () => {
+      (isTouching = false);
+      reticle.visible = false;
+    }
 
     const dom = renderer.domElement;
     dom.addEventListener("touchstart", onTouchStart);
