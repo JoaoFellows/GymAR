@@ -10,20 +10,33 @@ export default function ScanPage() {
       verbose: false,
     });
 
-    const config = {
-      fps: 10,
-      qrbox: { width: 250, height: 250 },
-      facingMode: "environment",
-    };
-
     const startScanner = async () => {
       try {
+        const devices = await Html5Qrcode.getCameras();
+
+        if (!devices || devices.length === 0) {
+          console.error("Nenhuma câmera disponível.");
+          return;
+        }
+
+        // Tenta achar câmera traseira
+        const backCamera = devices.find(device =>
+          device.label.toLowerCase().includes("back")
+        ) || devices[0]; // Fallback: primeira câmera
+
+        if (!backCamera) {
+          console.error("Nenhuma câmera traseira encontrada.");
+          return;
+        }
+
         await scanner.start(
-          config.facingMode,
-          config,
+          backCamera.id,
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+          },
           (text: string) => {
             console.log("QR Code:", text);
-
             window.location.href = text;
 
             scanner.stop().catch((err) =>
@@ -39,18 +52,15 @@ export default function ScanPage() {
       }
     };
 
-    // Evita erro de no-floating-promises
     void startScanner();
 
     return () => {
-        void scanner.stop().catch(() => {
-            // Ignorar erro ao parar scanner
-        });
-        try {
-            scanner.clear();
-        } catch (err) {
-            console.error("Erro ao limpar scanner:", err);
-        }
+      void scanner.stop().catch(() => {});
+      try {
+        scanner.clear();
+      } catch (err) {
+        console.error("Erro ao limpar scanner:", err);
+      }
     };
   }, []);
 
