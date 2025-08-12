@@ -73,7 +73,7 @@ export default function WorkoutPlannerPage() {
           <div className="flex gap-4 mb-6 justify-center flex-wrap">
             <button
               onClick={() => setShowExerciseSelector(true)}
-              className="flex items-center bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-semibold transition-colors"
+              className="flex items-center bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg h-14 w-56 font-semibold transition-colors"
             >
               <Plus className="h-5 w-5 mr-2" />
               Adicionar Exercício
@@ -82,7 +82,7 @@ export default function WorkoutPlannerPage() {
             {totalExercises > 0 && (
               <button
                 onClick={clearWorkout}
-                className="flex items-center bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg font-semibold transition-colors"
+                className="flex items-center justify-center bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg h-14 w-56 font-semibold transition-colors"
               >
                 <Trash2 className="h-5 w-5 mr-2" />
                 Limpar Treino
@@ -97,26 +97,30 @@ export default function WorkoutPlannerPage() {
               {selectedExercises.map((exercise, index) => (
                 <div
                   key={exercise.id}
-                  className="bg-white/10 rounded-lg p-4 flex items-center justify-between"
+                  className="bg-white/10 rounded-lg p-4"
                 >
-                  <div className="flex-1">
+                  <div className="flex flex-col">
+                    {/* Header with number and title */}
                     <div className="flex items-center mb-2">
                       <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">
                         {index + 1}
                       </span>
                       <h3 className="text-lg font-semibold">{exercise.title}</h3>
                     </div>
-                    <p className="text-gray-300 text-sm mb-2">{exercise.description}</p>
                     
-                    <div className="flex items-center gap-4 text-sm">
+                    {/* Description */}
+                    <p className="text-gray-300 text-sm mb-4">{exercise.description}</p>
+                    
+                    {/* Sets and Reps inputs */}
+                    <div className="flex items-center gap-6 text-sm mb-4">
                       <div className="flex items-center gap-2">
                         <label className="text-gray-400">Séries:</label>
                         <input
                           type="number"
                           min="1"
                           max="10"
-                          value={exercise.sets ?? 3}
-                          onChange={(e) => updateExercise(exercise.id, { sets: parseInt(e.target.value) || 3 })}
+                          value={exercise.sets}
+                          onChange={(e) => updateExercise(exercise.id, { sets: parseInt(e.target.value)})}
                           className="bg-white/20 rounded px-2 py-1 w-16 text-center text-white"
                         />
                       </div>
@@ -126,28 +130,29 @@ export default function WorkoutPlannerPage() {
                           type="number"
                           min="1"
                           max="50"
-                          value={exercise.reps ?? 12}
-                          onChange={(e) => updateExercise(exercise.id, { reps: parseInt(e.target.value) || 12 })}
+                          value={exercise.reps}
+                          onChange={(e) => updateExercise(exercise.id, { reps: parseInt(e.target.value)})}
                           className="bg-white/20 rounded px-2 py-1 w-16 text-center text-white"
                         />
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 ml-4">
-                    <Link
-                      href={`/exercise/${exercise.category}/${exercise.slug}`}
-                      className="flex items-center bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded text-sm font-semibold transition-colors"
-                    >
-                      <Play className="h-4 w-4 mr-1" />
-                      AR
-                    </Link>
-                    <button
-                      onClick={() => removeExercise(exercise.id)}
-                      className="flex items-center bg-red-600 hover:bg-red-700 px-3 py-2 rounded text-sm font-semibold transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    
+                    {/* Action buttons */}
+                    <div className="flex gap-2 w-full">
+                      <Link
+                        href={`/exercise/${exercise.category}/${exercise.slug}`}
+                        className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded text-sm font-semibold transition-colors flex-1"
+                      >
+                        <Play className="h-4 w-4 mr-1" />
+                        AR
+                      </Link>
+                      <button
+                        onClick={() => removeExercise(exercise.id)}
+                        className="flex items-center justify-center bg-red-600 hover:bg-red-700 px-3 py-2 rounded text-sm font-semibold transition-colors min-w-[60px]"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
