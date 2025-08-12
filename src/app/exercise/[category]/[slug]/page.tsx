@@ -1,17 +1,29 @@
 "use client";
 
-import { useEffect, useRef} from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { ArrowLeft, Plus } from "lucide-react";
 import { ARButton } from "three/examples/jsm/webxr/ARButton";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { useRouter, useParams } from "next/navigation";
+import { getExerciseBySlug } from "@/data/exercises";
+import { useWorkoutPlanner } from "@/hooks/useWorkoutPlanner";
+import Toast from "@/components/Toast";
 
 export default function ARModel() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   const params = useParams();
-  const slug = params.slug
-    ? (typeof params.slug === "string" ? params.slug : params.slug[0])
-    : undefined;
+  const { addExercise, isExerciseSelected, toast, hideToast } = useWorkoutPlanner();
+  
+  const slug = params?.slug as string;
+  const exercise = getExerciseBySlug(slug);
+
+  const handleAddToWorkout = () => {
+    if (exercise) {
+      addExercise(exercise);
+    }
+  };
 
   useEffect(() => {
     const scene = new THREE.Scene();
@@ -48,7 +60,7 @@ export default function ARModel() {
     scene.add(reticle);
 
     const loader = new GLTFLoader();
-    loader.load(`/models/${slug}.glb`, (gltf) => {
+    loader.load("/models/curl2.glb", (gltf) => {
       model = gltf.scene;
       model.visible = false;
 
@@ -97,7 +109,7 @@ export default function ARModel() {
             if (hit) {
               const pose = hit.getPose(referenceSpace!);
               if (pose) {
-                reticle.visible = !modelPlaced;
+                reticle.visible = true;
                 reticle.matrix.fromArray(pose.transform.matrix);
               }
             }
@@ -152,10 +164,101 @@ export default function ARModel() {
       dom.removeEventListener("touchend", onTouchEnd);
       dom.removeEventListener("touchcancel", onTouchEnd);
     };
-  }, [slug]);
+  }, []);
 
   return (
-    <div ref={containerRef} style={{ width: "100vw", height: "100vh", position: "relative" }}>
+    <div style={{ position: 'relative', width: "100vw", height: "100vh" }}>
+      {/* Header Controls */}
+      <div style={{ 
+        position: 'absolute', 
+        top: '20px', 
+        left: '20px', 
+        right: '20px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        zIndex: 10,
+        pointerEvents: 'none'
+      }}>
+        <button
+          onClick={() => router.back()}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            fontSize: '16px',
+            cursor: 'pointer',
+            pointerEvents: 'auto'
+          }}
+          aria-label="Voltar"
+        >
+          <ArrowLeft style={{ width: '20px', height: '20px', marginRight: '8px' }} />
+          Voltar
+        </button>
+        
+        {exercise && (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: '8px'
+          }}>
+            <div style={{
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              color: 'white',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              textAlign: 'center',
+              pointerEvents: 'auto'
+            }}>
+              <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 'bold' }}>
+                {exercise.title}
+              </h2>
+              <p style={{ margin: 0, fontSize: '14px', opacity: 0.9 }}>
+                {exercise.description}
+              </p>
+            </div>
+            
+            <button
+              onClick={handleAddToWorkout}
+              disabled={isExerciseSelected(exercise.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                backgroundColor: isExerciseSelected(exercise.id) 
+                  ? 'rgba(108, 117, 125, 0.8)' 
+                  : 'rgba(34, 197, 94, 0.9)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '10px 14px',
+                fontSize: '14px',
+                cursor: isExerciseSelected(exercise.id) ? 'not-allowed' : 'pointer',
+                pointerEvents: 'auto',
+                fontWeight: '600'
+              }}
+            >
+              <Plus style={{ width: '16px', height: '16px', marginRight: '6px' }} />
+              {isExerciseSelected(exercise.id) ? 'Já no treino' : 'Adicionar ao treino'}
+            </button>
+          </div>
+        )}
+      </div>
+      
+      {/* Three.js Container */}
+      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+      
+      {/* Toast */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
     </div>
   );
 }
