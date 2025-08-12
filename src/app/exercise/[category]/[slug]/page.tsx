@@ -60,7 +60,7 @@ export default function ARModel() {
     scene.add(reticle);
 
     const loader = new GLTFLoader();
-    loader.load("/models/curl2.glb", (gltf) => {
+    loader.load(`/models/${slug}.glb`, (gltf) => {
       model = gltf.scene;
       model.visible = false;
 
@@ -109,7 +109,7 @@ export default function ARModel() {
             if (hit) {
               const pose = hit.getPose(referenceSpace!);
               if (pose) {
-                reticle.visible = true;
+                reticle.visible = !modelPlaced;
                 reticle.matrix.fromArray(pose.transform.matrix);
               }
             }
