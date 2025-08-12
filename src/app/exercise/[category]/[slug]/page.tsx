@@ -164,7 +164,7 @@ export default function ARModel() {
       dom.removeEventListener("touchend", onTouchEnd);
       dom.removeEventListener("touchcancel", onTouchEnd);
     };
-  }, []);
+  }, [slug]);
 
   return (
     <div style={{ position: 'relative', width: "100vw", height: "100vh" }}>
