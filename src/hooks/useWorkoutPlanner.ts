@@ -101,7 +101,7 @@ export function useWorkoutPlanner() {
 
   const clearWorkout = () => {
     if (selectedExercises.length > 0) {
-      showToast('Treino limpo com sucesso!', 'info');
+      showToast('Treino removido com sucesso!', 'info');
     }
     setSelectedExercises([]);
   };
