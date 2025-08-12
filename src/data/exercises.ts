@@ -24,8 +24,8 @@ export const exercises: Exercise[] = [
   },
   {
     id: 3,
-    title: "Desenvolvimento de Ombros",
-    slug: "desenvolvimento-ombros",
+    title: "Kettlebell swing",
+    slug: "ketb",
     description: "Trabalha os ombros e tríceps.",
     category: "upper-body",
   },
