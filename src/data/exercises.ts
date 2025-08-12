@@ -24,25 +24,12 @@ export const exercises: Exercise[] = [
   },
   {
     id: 3,
-    title: "Desenvolvimento ombro",
-    slug: "des-ombro",
+    title: "Elevação Frontal",
+    slug: "elevacao-frontal",
     description: "Trabalha os ombros e tríceps.",
     category: "upper-body",
   },
-  {
-    id: 4,
-    title: "Tríceps no Banco",
-    slug: "triceps-banco",
-    description: "Foca no tríceps.",
-    category: "upper-body",
-  },
-  {
-    id: 5,
-    title: "Remada Curvada",
-    slug: "remada-curvada",
-    description: "Exercício para costas e antebraços.",
-    category: "upper-body",
-  },
+
   // Lower body exercises
   {
     id: 6,
@@ -63,20 +50,6 @@ export const exercises: Exercise[] = [
     title: "Agachamento unilateral",
     slug: "pistol-squat",
     description: "Foca nos posteriores de coxa e glúteos.",
-    category: "lower-body",
-  },
-  {
-    id: 9,
-    title: "Panturrilha em Pé",
-    slug: "panturrilha-em-pe",
-    description: "Exercício para panturrilhas.",
-    category: "lower-body",
-  },
-  {
-    id: 10,
-    title: "Cadeira Extensora",
-    slug: "cadeira-extensora",
-    description: "Isola o quadríceps.",
     category: "lower-body",
   },
 ];
