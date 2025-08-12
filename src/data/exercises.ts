@@ -24,8 +24,8 @@ export const exercises: Exercise[] = [
   },
   {
     id: 3,
-    title: "Kettlebell swing",
-    slug: "ketb",
+    title: "Desenvolvimento ombro",
+    slug: "des-ombro",
     description: "Trabalha os ombros e tríceps.",
     category: "upper-body",
   },
@@ -46,8 +46,8 @@ export const exercises: Exercise[] = [
   // Lower body exercises
   {
     id: 6,
-    title: "Agachamento",
-    slug: "agachamento",
+    title: "Kettlebell Swing",
+    slug: "ketb",
     description: "Um exercício para as pernas e glúteos.",
     category: "lower-body",
   },
